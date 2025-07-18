@@ -2,36 +2,54 @@ package main
 
 import (
 	"fmt"
-	tea "github.com/charmbracelet/bubbletea"
 	"os"
+	"strings"
+
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/hirotake111/redisclient/internal/state"
 )
 
 type model struct {
 	width    int
 	height   int
-	redisKey string // Stores the Redis key input
-	state    string // "initial" or "form"
+	redisKey string      // Stores the Redis key input
+	state    state.State // "initial" or "form"
+}
+
+func CreateInitialModel() model {
+	return model{
+		width:    80, // Default width
+		height:   24, // Default height
+		redisKey: "",
+		state:    state.InitialState, // Start in initial state
+	}
 }
 
 func (m model) Init() tea.Cmd {
-	m.state = "initial"
 	return nil
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
+	case tea.WindowSizeMsg:
+		return m.UpdateWindowSizee(msg.Height, msg.Width), nil
+
 	case tea.KeyMsg:
 		key := msg.String()
-		if m.state == "initial" {
+		switch m.state {
+		case state.InitialState:
 			if key == "enter" {
-				m.state = "form"
-				return m, nil
+				return m.toFormState(), nil
+			}
+			if key == "esc" || key == "ctrl+c" || key == "ctrl+q" {
+				return m, tea.Quit
 			}
 			// Ignore other keys in initial state
 			return m, nil
-		}
-		if m.state == "form" {
+
+		case state.FormState:
 			if key == "enter" {
+				// TODO: Use the redisKey for some operation
 				return m, tea.Quit
 			}
 			if key == "backspace" || key == "ctrl+h" {
@@ -45,26 +63,70 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 		}
-	case tea.WindowSizeMsg:
-		m.width = msg.Width
-		m.height = msg.Height
 	}
+
 	return m, nil
 }
 
 func (m model) View() string {
-	if m.state == "initial" {
-		return "hello world\n(Press Enter to continue)"
-	}
-	// Form view
-	label := "Enter Redis key:"
-	input := m.redisKey
-	info := "Type your Redis key and press Enter. Backspace deletes."
+	switch m.state {
+	case state.InitialState:
+		paddingHeight := max(0, m.height/2)
+		verticalPadding := strings.Repeat("\n", paddingHeight)
+		info := fmt.Sprintf("height: %d, width: %d\n", m.height, m.width)
+		line1 := "Welcome to the Redis Client!"
+		line2 := "Press Enter to start, or Esc to quit."
 
-	view := ""
-	view += fmt.Sprintf("%s %s\n", label, input)
-	view += info
-	return view
+		return verticalPadding +
+			m.centerText(line1) + "\n" +
+			m.centerText(line2) + "\n" +
+			m.centerText(info) + "\n"
+
+	case state.FormState:
+		// Form view
+		label := "Enter Redis key:"
+		input := m.redisKey
+		info := "Type your Redis key and press Enter. Backspace deletes."
+
+		view := ""
+		view += fmt.Sprintf("%s %s\n", label, input)
+		view += info
+		return view
+	}
+
+	return fmt.Sprintf("Unknown state: %s", m.state)
+}
+
+func (m model) centerText(txt string) string {
+	padding := max((m.width-len(txt))/2, 0)
+	return spaces(padding) + txt
+}
+
+func (m model) toFormState() model {
+	return model{
+		width:    m.width,
+		height:   m.height,
+		redisKey: "",
+		state:    state.FormState, // Transition to form state
+	}
+}
+
+func (m model) toInitialState() model {
+	return model{
+		width:    m.width,
+		height:   m.height,
+		redisKey: "",
+		state:    state.InitialState, // Transition back to initial state
+	}
+}
+
+func (m model) UpdateWindowSizee(height, width int) model {
+	return model{
+		width:    width,
+		height:   height,
+		redisKey: m.redisKey,
+		state:    m.state, // Keep the current state
+	}
 }
 
 func spaces(n int) string {
@@ -75,7 +137,8 @@ func spaces(n int) string {
 }
 
 func main() {
-	p := tea.NewProgram(model{state: "initial"}, tea.WithAltScreen())
+	m := CreateInitialModel()
+	p := tea.NewProgram(m, tea.WithAltScreen())
 	if err := p.Start(); err != nil {
 		os.Exit(1)
 	}
