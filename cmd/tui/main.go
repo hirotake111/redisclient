@@ -7,18 +7,44 @@ import (
 )
 
 type model struct {
-	width  int
-	height int
+	width    int
+	height   int
+	redisKey string // Stores the Redis key input
+	state    string // "initial" or "form"
 }
 
 func (m model) Init() tea.Cmd {
+	m.state = "initial"
 	return nil
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
-		return m, tea.Quit
+		key := msg.String()
+		if m.state == "initial" {
+			if key == "enter" {
+				m.state = "form"
+				return m, nil
+			}
+			// Ignore other keys in initial state
+			return m, nil
+		}
+		if m.state == "form" {
+			if key == "enter" {
+				return m, tea.Quit
+			}
+			if key == "backspace" || key == "ctrl+h" {
+				if len(m.redisKey) > 0 {
+					m.redisKey = m.redisKey[:len(m.redisKey)-1]
+				}
+				return m, nil
+			}
+			if len(key) == 1 && msg.Type == tea.KeyRunes {
+				m.redisKey += key
+				return m, nil
+			}
+		}
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
@@ -27,26 +53,17 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) View() string {
-	// Center the message in the window
-	msg := "Hello, World!"
-	info := "Press any key to exit."
-
-	// Calculate vertical padding
-	padTop := (m.height - 2) / 2
-	padLeft := (m.width - len(msg)) / 2
-	if padTop < 0 {
-		padTop = 0
+	if m.state == "initial" {
+		return "hello world\n(Press Enter to continue)"
 	}
-	if padLeft < 0 {
-		padLeft = 0
-	}
+	// Form view
+	label := "Enter Redis key:"
+	input := m.redisKey
+	info := "Type your Redis key and press Enter. Backspace deletes."
 
 	view := ""
-	for i := 0; i < padTop; i++ {
-		view += "\n"
-	}
-	view += fmt.Sprintf("%s%s\n", spaces(padLeft), msg)
-	view += fmt.Sprintf("%s%s", spaces(padLeft), info)
+	view += fmt.Sprintf("%s %s\n", label, input)
+	view += info
 	return view
 }
 
@@ -58,7 +75,7 @@ func spaces(n int) string {
 }
 
 func main() {
-	p := tea.NewProgram(model{}, tea.WithAltScreen())
+	p := tea.NewProgram(model{state: "initial"}, tea.WithAltScreen())
 	if err := p.Start(); err != nil {
 		os.Exit(1)
 	}
