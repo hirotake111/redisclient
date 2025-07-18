@@ -19,15 +19,15 @@ const (
 type model struct {
 	width    int
 	height   int
-	redisKey string        // Stores the Redis key input
+	redisKey state.Form    // Stores the Redis key input
 	state    state.State   // "initial" or "form"
 	redis    *redis.Client // Redis client instance
 }
 
 func CreateInitialModel(r *redis.Client) model {
 	return model{
-		width:    80, // Default width
-		height:   24, // Default height
+		width:    0, // Default width
+		height:   0, // Default height
 		redisKey: "",
 		state:    state.InitialState, // Start in initial state
 		redis:    r,
@@ -68,8 +68,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 			if len(key) == 1 && msg.Type == tea.KeyRunes {
-				m.redisKey += key
-				return m, nil
+				return m.AppendRedisKey(key), nil
 			}
 		}
 	}
@@ -126,6 +125,7 @@ func (m model) toInitialState() model {
 		height:   m.height,
 		redisKey: "",
 		state:    state.InitialState, // Transition back to initial state
+		redis:    m.redis,
 	}
 }
 
@@ -135,6 +135,17 @@ func (m model) UpdateWindowSizee(height, width int) model {
 		height:   height,
 		redisKey: m.redisKey,
 		state:    m.state, // Keep the current state
+		redis:    m.redis,
+	}
+}
+
+func (m model) AppendRedisKey(s string) model {
+	return model{
+		width:    m.width,
+		height:   m.height,
+		redisKey: m.redisKey.AppendRight(s),
+		state:    m.state,
+		redis:    m.redis,
 	}
 }
 
@@ -161,7 +172,7 @@ func main() {
 	}
 	m := CreateInitialModel(r)
 	p := tea.NewProgram(m, tea.WithAltScreen())
-	if err := p.Start(); err != nil {
+	if _, err := p.Run(); err != nil {
 		os.Exit(1)
 	}
 }
