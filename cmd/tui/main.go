@@ -1,27 +1,36 @@
 package main
 
 import (
+	"context"
 	"fmt"
+	"log"
 	"os"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/hirotake111/redisclient/internal/state"
+	"github.com/redis/go-redis/v9"
+)
+
+const (
+	defaultRedisURL = "redis://localhost:6379"
 )
 
 type model struct {
 	width    int
 	height   int
-	redisKey string      // Stores the Redis key input
-	state    state.State // "initial" or "form"
+	redisKey string        // Stores the Redis key input
+	state    state.State   // "initial" or "form"
+	redis    *redis.Client // Redis client instance
 }
 
-func CreateInitialModel() model {
+func CreateInitialModel(r *redis.Client) model {
 	return model{
 		width:    80, // Default width
 		height:   24, // Default height
 		redisKey: "",
 		state:    state.InitialState, // Start in initial state
+		redis:    r,
 	}
 }
 
@@ -137,7 +146,20 @@ func spaces(n int) string {
 }
 
 func main() {
-	m := CreateInitialModel()
+	ctx := context.Background()
+	addr := os.Getenv("REDIS_URL")
+	if addr == "" {
+		addr = defaultRedisURL
+	}
+	password := os.Getenv("REDIS_PASSWORD")
+	r := redis.NewClient(&redis.Options{
+		Addr:     addr,
+		Password: password,
+	})
+	if _, err := r.Ping(ctx).Result(); err != nil {
+		log.Fatalf("Failed to connect to Redis at %s - %v", addr, err)
+	}
+	m := CreateInitialModel(r)
 	p := tea.NewProgram(m, tea.WithAltScreen())
 	if err := p.Start(); err != nil {
 		os.Exit(1)
