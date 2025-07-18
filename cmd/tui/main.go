@@ -107,57 +107,38 @@ func (m model) View() string {
 
 func (m model) centerText(txt string) string {
 	padding := max((m.width-len(txt))/2, 0)
-	return spaces(padding) + txt
+	return strings.Repeat(" ", padding) + txt
 }
 
 func (m model) toFormState() model {
-	return model{
-		width:    m.width,
-		height:   m.height,
-		redisKey: "",
-		state:    state.FormState, // Transition to form state
-	}
+	m.state = state.FormState // Transition to form state
+	return m
 }
 
 func (m model) toInitialState() model {
-	return model{
-		width:    m.width,
-		height:   m.height,
-		redisKey: "",
-		state:    state.InitialState, // Transition back to initial state
-		redis:    m.redis,
-	}
+	m.state = state.InitialState // Transition back to initial state
+	return m
 }
 
 func (m model) UpdateWindowSizee(height, width int) model {
-	return model{
-		width:    width,
-		height:   height,
-		redisKey: m.redisKey,
-		state:    m.state, // Keep the current state
-		redis:    m.redis,
-	}
+	m.width = width
+	m.height = height
+	return m
 }
 
 func (m model) AppendRedisKey(s string) model {
-	return model{
-		width:    m.width,
-		height:   m.height,
-		redisKey: m.redisKey.AppendRight(s),
-		state:    m.state,
-		redis:    m.redis,
-	}
+	m.redisKey = m.redisKey.AppendRight(s)
+	return m
 }
 
-func spaces(n int) string {
-	if n <= 0 {
-		return ""
-	}
-	return fmt.Sprintf("%*s", n, "")
+func (m model) RemoveRightRedisKey() model {
+	m.redisKey = m.redisKey.RemoveRight()
+	return m
 }
 
 func main() {
 	ctx := context.Background()
+
 	addr := os.Getenv("REDIS_URL")
 	if addr == "" {
 		addr = defaultRedisURL
@@ -170,6 +151,7 @@ func main() {
 	if _, err := r.Ping(ctx).Result(); err != nil {
 		log.Fatalf("Failed to connect to Redis at %s - %v", addr, err)
 	}
+
 	m := CreateInitialModel(r)
 	p := tea.NewProgram(m, tea.WithAltScreen())
 	if _, err := p.Run(); err != nil {

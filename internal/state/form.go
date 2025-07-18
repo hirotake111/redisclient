@@ -7,7 +7,10 @@ func (f Form) String() string {
 }
 
 func (f Form) RemoveRight() Form {
-	return f[:len(f)-1]
+	if len(f) > 0 {
+		return f[:len(f)-1]
+	}
+	return f
 }
 
 func (f Form) AppendRight(s string) Form {
