@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/hirotake111/redisclient/internal/config"
 	"github.com/hirotake111/redisclient/internal/state"
 	"github.com/redis/go-redis/v9"
 )
@@ -22,15 +23,17 @@ type model struct {
 	redisKey state.Form    // Stores the Redis key input
 	state    state.State   // "initial" or "form"
 	redis    *redis.Client // Redis client instance
+	message  string        // temporary message for display
 }
 
-func CreateInitialModel(r *redis.Client) model {
+func CreateInitialModel(r *redis.Client, message string) model {
 	return model{
 		width:    0, // Default width
 		height:   0, // Default height
 		redisKey: "",
 		state:    state.InitialState, // Start in initial state
 		redis:    r,
+		message:  message,
 	}
 }
 
@@ -41,7 +44,7 @@ func (m model) Init() tea.Cmd {
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
-		return m.UpdateWindowSizee(msg.Height, msg.Width), nil
+		return m.UpdateWindowSize(msg.Height, msg.Width), nil
 
 	case tea.KeyMsg:
 		key := msg.String()
@@ -81,7 +84,7 @@ func (m model) View() string {
 	case state.InitialState:
 		paddingHeight := max(0, m.height/2)
 		verticalPadding := strings.Repeat("\n", paddingHeight)
-		info := fmt.Sprintf("height: %d, width: %d\n", m.height, m.width)
+		info := fmt.Sprintf("height: %d, width: %d, message: %s\n", m.height, m.width, m.message)
 		line1 := "Welcome to the Redis Client!"
 		line2 := "Press Enter to start, or Esc to quit."
 
@@ -124,7 +127,7 @@ func (m model) toInitialState() model {
 	return m
 }
 
-func (m model) UpdateWindowSizee(height, width int) model {
+func (m model) UpdateWindowSize(height, width int) model {
 	m.width = width
 	m.height = height
 	return m
@@ -143,6 +146,8 @@ func (m model) RemoveRightRedisKey() model {
 func main() {
 	ctx := context.Background()
 
+	_ = config.GetConfig()
+
 	addr := os.Getenv("REDIS_URL")
 	if addr == "" {
 		addr = defaultRedisURL
@@ -156,7 +161,7 @@ func main() {
 		log.Fatalf("Failed to connect to Redis at %s - %v", addr, err)
 	}
 
-	m := CreateInitialModel(r)
+	m := CreateInitialModel(r, "Welcome to the Redis Client!")
 	p := tea.NewProgram(m, tea.WithAltScreen())
 	if _, err := p.Run(); err != nil {
 		os.Exit(1)
