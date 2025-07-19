@@ -114,6 +114,10 @@ func (m model) toFormState() model {
 	m.state = state.FormState // Transition to form state
 	return m
 }
+func (m model) toViewState() model {
+	m.state = state.ViewState // Transition to view state
+	return m
+}
 
 func (m model) toInitialState() model {
 	m.state = state.InitialState // Transition back to initial state
