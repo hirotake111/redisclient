@@ -9,6 +9,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/hirotake111/redisclient/internal/config"
+	"github.com/hirotake111/redisclient/internal/logger"
 	"github.com/hirotake111/redisclient/internal/state"
 	"github.com/redis/go-redis/v9"
 )
@@ -144,6 +145,14 @@ func (m model) RemoveRightRedisKey() model {
 }
 
 func main() {
+	// Initialize logger to write to temp file
+	if err := logger.InitLogger(); err != nil {
+		// If logger fails, print to stderr and exit
+		log.Printf("Failed to initialize logger: %v\n", err)
+		os.Exit(1)
+	}
+	log.Print("Logger initialized successfully")
+
 	ctx := context.Background()
 
 	_ = config.GetConfig()
@@ -159,11 +168,14 @@ func main() {
 	})
 	if _, err := r.Ping(ctx).Result(); err != nil {
 		log.Fatalf("Failed to connect to Redis at %s - %v", addr, err)
+		os.Exit(1)
 	}
 
 	m := CreateInitialModel(r, "Welcome to the Redis Client!")
 	p := tea.NewProgram(m, tea.WithAltScreen())
 	if _, err := p.Run(); err != nil {
+		log.Printf("Error running program: %v\n", err)
 		os.Exit(1)
 	}
+	log.Print("Program exited successfully")
 }
