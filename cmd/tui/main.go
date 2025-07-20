@@ -155,19 +155,15 @@ func main() {
 
 	ctx := context.Background()
 
-	_ = config.GetConfig()
-
-	addr := os.Getenv("REDIS_URL")
-	if addr == "" {
-		addr = defaultRedisURL
+	cfg, err := config.GetConfigFromEnv()
+	if err != nil {
+		log.Printf("Failed to get config from environment: %v\n", err)
+		os.Exit(1)
 	}
-	password := os.Getenv("REDIS_PASSWORD")
-	r := redis.NewClient(&redis.Options{
-		Addr:     addr,
-		Password: password,
-	})
+
+	r := redis.NewClient(cfg.Option)
 	if _, err := r.Ping(ctx).Result(); err != nil {
-		log.Fatalf("Failed to connect to Redis at %s - %v", addr, err)
+		log.Fatalf("Failed to connect to Redis at %s - %v", cfg.Option.Addr, err)
 		os.Exit(1)
 	}
 
