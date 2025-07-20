@@ -13,7 +13,6 @@ import (
 	"github.com/hirotake111/redisclient/internal/cmd"
 	"github.com/hirotake111/redisclient/internal/config"
 	"github.com/hirotake111/redisclient/internal/logger"
-	"github.com/hirotake111/redisclient/internal/state"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -40,17 +39,27 @@ var (
 			BorderForeground(lipgloss.Color("240"))
 )
 
+type State string
+
+const (
+	ListState State = "list"
+)
+
 type model struct {
-	ctx        context.Context // Context for app
-	tabs       []string        // List of tabs
-	currentTab int             // Current tab index
-	width      int             // Width of the terminal window
-	height     int             // Height of the terminal window
-	redisKey   state.Form      // Stores the Redis key input
-	state      state.State     // "initial" or "form"
-	redis      *redis.Client   // Redis client instance
-	message    string          // temporary message for display
-	value      string          // Stores the value for the current key
+	ctx context.Context // Context for app
+
+	keys          []string // List of keys fetched from redis
+	currentKeyIdx int      // Current key index in the list
+
+	tabs       []string // List of tabs
+	currentTab int      // Current tab index
+
+	width   int           // Width of the terminal window
+	height  int           // Height of the terminal window
+	state   State         // View state
+	redis   *redis.Client // Redis client instance
+	message string        // temporary message for display
+	value   string        // Stores the value for the current key
 }
 
 func (m model) Init() tea.Cmd {
@@ -59,45 +68,8 @@ func (m model) Init() tea.Cmd {
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	switch st := m.state.(type) {
-	case state.InitialState:
-		switch msg := msg.(type) {
-		case tea.WindowSizeMsg:
-			return m.UpdateWindowSize(msg.Height, msg.Width), nil
-		case tea.KeyMsg:
-			key := msg.String()
-			if key == "enter" {
-				return m.toFormState(), nil
-			}
-			if key == "esc" || key == "ctrl+c" || key == "ctrl+q" {
-				return m, tea.Quit
-			}
-			// Ignore other keys in initial state
-			return m, nil
-		}
-
-	case state.FormState:
-		switch msg := msg.(type) {
-		case tea.WindowSizeMsg:
-			return m.UpdateWindowSize(msg.Height, msg.Width), nil
-		case tea.KeyMsg:
-			key := msg.String()
-			if key == "enter" {
-				// TODO: Use the redisKey for some operation
-				return m, tea.Quit
-			}
-			if key == "backspace" || key == "ctrl+h" {
-				if len(m.redisKey) > 0 {
-					m.redisKey = m.redisKey[:len(m.redisKey)-1]
-				}
-				return m, nil
-			}
-			if len(key) == 1 && msg.Type == tea.KeyRunes {
-				return m.AppendRedisKey(key), nil
-			}
-		}
-
-	case state.ViewState:
+	switch m.state {
+	case "list":
 		switch msg := msg.(type) {
 		case tea.WindowSizeMsg:
 			return m.UpdateWindowSize(msg.Height, msg.Width), nil
@@ -108,23 +80,18 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			if key == "j" {
 				log.Print("Moving cursor down")
-				log.Printf("Current index before moving down: %d", st.Current)
-				st = st.MoveCursorDown()
-				m.state = st
-				log.Printf("Current index after moving down: %d", st.Current)
-				log.Printf("Keys: %v", st.Keys)
-				return m, cmd.GetValue(m.ctx, m.redis, st.Keys[st.Current])
+				m = m.MoveCursorDown()
+				return m, cmd.GetValue(m.ctx, m.redis, m.currentKey())
 			}
 			if key == "k" {
 				log.Print("Moving cursor up")
-				st = st.MoveCursorUp()
-				m.state = st
-				return m, cmd.GetValue(m.ctx, m.redis, st.Keys[st.Current])
+				m = m.MoveCursorUp()
+				return m, cmd.GetValue(m.ctx, m.redis, m.currentKey())
 			}
 			if key == "tab" {
 				// Switch to next tabIndex
 				m = m.NextTab()
-				return m, cmd.GetValue(m.ctx, m.redis, st.Keys[st.Current])
+				return m, cmd.GetValue(m.ctx, m.redis, m.currentKey())
 			}
 
 		case cmd.ValueMsg:
@@ -142,33 +109,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) View() string {
-	switch st := m.state.(type) {
-	case state.InitialState:
-		paddingHeight := max(0, m.height/2)
-		verticalPadding := strings.Repeat("\n", paddingHeight)
-		info := fmt.Sprintf("height: %d, width: %d, message: %s\n", m.height, m.width, m.message)
-		line1 := "Welcome to the Redis Client!"
-		line2 := "Press Enter to start, or Esc to quit."
-
-		return verticalPadding +
-			m.centerText(line1) + "\n" +
-			m.centerText(line2) + "\n" +
-			m.centerText(info) + "\n"
-
-	case state.FormState:
-		// Form view
-		label := "Enter Redis key:"
-		input := m.redisKey
-		info := "Type your Redis key and press Enter. Backspace deletes."
-
-		view := ""
-		view += fmt.Sprintf("%s %s\n", label, input)
-		view += info
-		return view
-
-	case state.ViewState:
+	switch m.state {
+	case ListState:
 		tabRow := renderTabRow(m.tabs, m.currentTab)
-		klv := renderKeyListView(st, m.width)
+		klv := renderKeyListView(m.keys, m.currentKeyIdx, m.width)
 		valueView := renderValueView(m.value, m.width)
 		return lipgloss.JoinVertical(lipgloss.Center,
 			tabRow,
@@ -209,28 +153,28 @@ func renderTabRow(tabs []string, currentTab int) string {
 	return lipgloss.JoinHorizontal(lipgloss.Top, _tabs...)
 }
 
-func renderKeyListView(v state.ViewState, width int) string {
+func renderKeyListView(keys []string, cur int, width int) string {
 	style := keyListStyle.PaddingRight(width / 3)
 
-	if len(v.Keys) == 0 {
+	if len(keys) == 0 {
 		return style.Render(list.New([]string{"No keys found"}).String())
 	}
 
-	ks := make([]string, 0, len(v.Keys))
-	for _, key := range v.Keys {
-		ks = append(ks, key.String())
+	ks := make([]string, 0, len(keys))
+	for _, key := range keys {
+		ks = append(ks, key)
 	}
 
 	l := list.New(ks).
 		ItemStyle(keyListStyle).
 		Enumerator(func(items list.Items, i int) string {
-			if i == v.Current {
+			if i == cur {
 				return "▶ " // Current item indicator
 			}
 			return ""
 		}).
 		ItemStyleFunc(func(items list.Items, i int) lipgloss.Style {
-			if i == v.Current {
+			if i == cur {
 				return lipgloss.NewStyle().
 					Foreground(lipgloss.Color("30")).
 					Background(lipgloss.Color("44"))
@@ -246,15 +190,6 @@ func (m model) centerText(txt string) string {
 	return strings.Repeat(" ", padding) + txt
 }
 
-func (m model) toFormState() model {
-	m.state = state.FormState("") // Transition to form state
-	return m
-}
-func (m model) toViewState() model {
-	m.state = state.ViewState{} // Transition to view state
-	return m
-}
-
 func (m model) UpdateWindowSize(height, width int) model {
 	m.width = width
 	m.height = height
@@ -263,18 +198,8 @@ func (m model) UpdateWindowSize(height, width int) model {
 	return m
 }
 
-func (m model) AppendRedisKey(s string) model {
-	m.redisKey = m.redisKey.AppendRight(s)
-	return m
-}
-
-func (m model) RemoveRightRedisKey() model {
-	m.redisKey = m.redisKey.RemoveRight()
-	return m
-}
-
 func (m model) UpdateKeyList(msg cmd.KeysUpdatedMsg) model {
-	m.state = state.ViewState{Keys: msg}
+	m.keys = msg
 	return m
 }
 
@@ -287,6 +212,23 @@ func (m model) UpdateValue(msg cmd.ValueMsg) model {
 func (m model) NextTab() model {
 	m.currentTab = (m.currentTab + 1) % len(m.tabs)
 	return m
+}
+
+func (m model) MoveCursorDown() model {
+	m.currentKeyIdx = min(m.currentKeyIdx+1, len(m.keys)-1)
+	return m
+}
+
+func (m model) MoveCursorUp() model {
+	m.currentKeyIdx = max(m.currentKeyIdx-1, 0)
+	return m
+}
+
+func (m model) currentKey() string {
+	if m.currentKeyIdx < 0 || m.currentKeyIdx >= len(m.keys) {
+		return ""
+	}
+	return m.keys[m.currentKeyIdx]
 }
 
 func main() {
@@ -315,7 +257,7 @@ func main() {
 	m := model{
 		ctx:   ctx,
 		tabs:  []string{"GET", "SET", "HGET", "HSET"},
-		state: state.ViewState{},
+		state: "list",
 		redis: r,
 	}
 

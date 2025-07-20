@@ -5,24 +5,14 @@ import (
 	"log"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/hirotake111/redisclient/internal/values"
 	"github.com/redis/go-redis/v9"
 )
 
 type ErrMsg struct{ err error }
 
-type KeysUpdatedMsg []*values.Key
+type KeysUpdatedMsg []string
 
 type ValueMsg string
-
-func NewKeysUpdatedMsg(keys []string) KeysUpdatedMsg {
-	var valuesKeys []*values.Key
-	for _, key := range keys {
-		k := values.Key(key)
-		valuesKeys = append(valuesKeys, &k)
-	}
-	return valuesKeys
-}
 
 func GetKeys(ctx context.Context, redis *redis.Client) tea.Cmd {
 	log.Print("Fetching keys from Redis...")
@@ -33,18 +23,18 @@ func GetKeys(ctx context.Context, redis *redis.Client) tea.Cmd {
 			return ErrMsg{err: err}
 		}
 		log.Printf("Fetched %d keys from Redis", len(keys))
-		return NewKeysUpdatedMsg(keys)
+		return KeysUpdatedMsg(keys)
 	}
 }
 
-func GetValue(ctx context.Context, redis *redis.Client, key *values.Key) tea.Cmd {
-	log.Printf("Fetching value for key: %s", *key)
+func GetValue(ctx context.Context, redis *redis.Client, key string) tea.Cmd {
+	log.Printf("Fetching value for key: %s", key)
 	return func() tea.Msg {
-		value, err := redis.Get(ctx, string(*key)).Result()
+		value, err := redis.Get(ctx, key).Result()
 		if err != nil {
 			return ErrMsg{err: err}
 		}
-		log.Printf("Fetched value for key %s: %s", *key, value)
+		log.Printf("Fetched value for key %s: %s", key, value)
 		return ValueMsg(value)
 	}
 }
