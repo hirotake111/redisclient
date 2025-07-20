@@ -111,13 +111,18 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m model) View() string {
 	switch m.state {
 	case ListState:
+		// Calculate widths
+		widthKeyListView := m.width / 3
+		widthValueView := m.width - widthKeyListView - 10 // Adjust for padding and borders
+
 		tabRow := renderTabRow(m.tabs, m.currentTab)
-		klv := renderKeyListView(m.keys, m.currentKeyIdx, m.width)
-		valueView := renderValueView(m.value, m.width)
+		keyListView := renderKeyListView(m.keys, m.currentKeyIdx, widthKeyListView)
+		valueView := renderValueView(m.value, widthValueView)
+
 		return lipgloss.JoinVertical(lipgloss.Center,
 			tabRow,
 			lipgloss.JoinHorizontal(lipgloss.Top,
-				klv,
+				keyListView,
 				valueView,
 			),
 		)
@@ -127,6 +132,7 @@ func (m model) View() string {
 }
 
 func renderValueView(value string, width int) string {
+	title := "  Value"
 	if value == "" {
 		value = "No value found for the selected key."
 	}
@@ -136,9 +142,9 @@ func renderValueView(value string, width int) string {
 		Padding(1).
 		BorderStyle(lipgloss.RoundedBorder()).
 		BorderForeground(lipgloss.Color("240")).
-		Width(width/3 - 2) // Adjust width to fit within the terminal
+		Width(width) // Adjust width to fit within the terminal
 
-	return style.Render(value)
+	return lipgloss.JoinVertical(lipgloss.Top, title, style.Render(value))
 }
 
 func renderTabRow(tabs []string, currentTab int) string {
@@ -154,18 +160,14 @@ func renderTabRow(tabs []string, currentTab int) string {
 }
 
 func renderKeyListView(keys []string, cur int, width int) string {
-	style := keyListStyle.PaddingRight(width / 3)
+	title := "  Keys"
+	style := keyListStyle.PaddingRight(width)
 
 	if len(keys) == 0 {
 		return style.Render(list.New([]string{"No keys found"}).String())
 	}
 
-	ks := make([]string, 0, len(keys))
-	for _, key := range keys {
-		ks = append(ks, key)
-	}
-
-	l := list.New(ks).
+	l := list.New(keys).
 		ItemStyle(keyListStyle).
 		Enumerator(func(items list.Items, i int) string {
 			if i == cur {
@@ -182,7 +184,7 @@ func renderKeyListView(keys []string, cur int, width int) string {
 			return lipgloss.NewStyle()
 		})
 
-	return style.Render(l.String())
+	return lipgloss.JoinVertical(lipgloss.Top, title, style.Render(l.String()))
 }
 
 func (m model) centerText(txt string) string {
