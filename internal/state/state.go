@@ -6,26 +6,21 @@ type State interface {
 	isState()
 }
 
-type initialState string
+type InitialState string
 
-func (s initialState) isState() {}
-
-const InitialState initialState = "initial"
+func (s InitialState) isState() {}
 
 // form state
-type formState string
+type FormState string
 
-func (s formState) isState() {}
-
-const FormState formState = "form"
+func (s FormState) isState() {}
 
 // view state
-type viewState struct {
+type ViewState struct {
 	keys []*values.Key // Stores the keys for the view state
 }
 
-var ViewState viewState = viewState{
-	keys: make([]*values.Key, 0),
+func (s ViewState) isState() {}
+func (s ViewState) String() string {
+	return "view"
 }
-
-func (s viewState) isState() {}

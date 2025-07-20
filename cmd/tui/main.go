@@ -27,17 +27,6 @@ type model struct {
 	message  string        // temporary message for display
 }
 
-func CreateInitialModel(r *redis.Client, message string) model {
-	return model{
-		width:    0, // Default width
-		height:   0, // Default height
-		redisKey: "",
-		state:    state.InitialState, // Start in initial state
-		redis:    r,
-		message:  message,
-	}
-}
-
 func (m model) Init() tea.Cmd {
 	return nil
 }
@@ -49,7 +38,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case tea.KeyMsg:
 		key := msg.String()
-		switch m.state {
+		switch m.state.(type) {
 		case state.InitialState:
 			if key == "enter" {
 				return m.toFormState(), nil
@@ -74,14 +63,21 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if len(key) == 1 && msg.Type == tea.KeyRunes {
 				return m.AppendRedisKey(key), nil
 			}
+
+		case state.ViewState:
+			if key == "esc" || key == "ctrl+c" || key == "ctrl+q" {
+				return m, tea.Quit
+			}
+
 		}
+
 	}
 
 	return m, nil
 }
 
 func (m model) View() string {
-	switch m.state {
+	switch m.state.(type) {
 	case state.InitialState:
 		paddingHeight := max(0, m.height/2)
 		verticalPadding := strings.Repeat("\n", paddingHeight)
@@ -115,16 +111,11 @@ func (m model) centerText(txt string) string {
 }
 
 func (m model) toFormState() model {
-	m.state = state.FormState // Transition to form state
+	m.state = state.FormState("") // Transition to form state
 	return m
 }
 func (m model) toViewState() model {
-	m.state = state.ViewState // Transition to view state
-	return m
-}
-
-func (m model) toInitialState() model {
-	m.state = state.InitialState // Transition back to initial state
+	m.state = state.ViewState{} // Transition to view state
 	return m
 }
 
@@ -146,7 +137,7 @@ func (m model) RemoveRightRedisKey() model {
 
 func main() {
 	// Initialize logger to write to temp file
-	if err := logger.InitLogger(); err != nil {
+	if err := logger.Initialize(); err != nil {
 		// If logger fails, print to stderr and exit
 		log.Printf("Failed to initialize logger: %v\n", err)
 		os.Exit(1)
@@ -167,7 +158,10 @@ func main() {
 		os.Exit(1)
 	}
 
-	m := CreateInitialModel(r, "Welcome to the Redis Client!")
+	m := model{
+		state: state.ViewState{},
+		redis: r,
+	}
 	p := tea.NewProgram(m, tea.WithAltScreen())
 	if _, err := p.Run(); err != nil {
 		log.Printf("Error running program: %v\n", err)
