@@ -92,8 +92,10 @@ func TitleBar(title string) lipgloss.Style {
 
 func KeyList(keys []string, cur, height, width int) string {
 	style := keyListStyle.Width(width)
+	var keyFound = true
 	if len(keys) == 0 {
-		return style.Render(" No keys found.")
+		keys = []string{"No keys found."}
+		keyFound = false
 	}
 
 	listItems := make([]string, max(len(keys), height))
@@ -108,19 +110,12 @@ func KeyList(keys []string, cur, height, width int) string {
 	l := list.New(listItems).
 		ItemStyle(style).
 		Enumerator(func(items list.Items, i int) string {
-			if i == cur {
+			if i == cur && keyFound {
 				return "▶ " // Current item indicator
 			}
 			return ""
 		}).
-		ItemStyleFunc(func(items list.Items, i int) lipgloss.Style {
-			if i == cur {
-				return lipgloss.NewStyle().
-					Foreground(lipgloss.Color("30")).
-					Background(lipgloss.Color("44"))
-			}
-			return lipgloss.NewStyle()
-		})
+		ItemStyleFunc(func(items list.Items, i int) lipgloss.Style { return lipgloss.NewStyle() })
 
 	return style.Render(l.String())
 }
