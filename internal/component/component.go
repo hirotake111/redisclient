@@ -47,7 +47,20 @@ var (
 				PaddingTop(1)
 	TitleBarStyle = lipgloss.NewStyle().
 			PaddingLeft(1)
+	filterlabelStyle = lipgloss.NewStyle().PaddingLeft(1).Background(gray)
+	filterFormStyle  = lipgloss.NewStyle().PaddingLeft(1)
 )
+
+func FilterForm(label, value string, width int) string {
+	return lipgloss.NewStyle().
+		Width(width / 2).
+		BorderStyle(lipgloss.RoundedBorder()).
+		BorderForeground(gray).
+		Render(lipgloss.JoinHorizontal(lipgloss.Top,
+			filterlabelStyle.Render(label+":"),
+			filterFormStyle.Render(value),
+		))
+}
 
 func labelAndName(label, name string) string {
 	return lipgloss.JoinHorizontal(lipgloss.Center,

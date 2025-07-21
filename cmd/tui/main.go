@@ -77,6 +77,9 @@ type model struct {
 	state State         // View state
 	redis *redis.Client // Redis client instance
 	value string        // Stores the value for the current key
+
+	filterHighlighted bool   // Indicates if the filter form is highlighted
+	filterValue       string // Stores the value for the filter form
 }
 
 func (m model) HostName() string {
@@ -98,12 +101,34 @@ func (m model) Init() tea.Cmd {
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch m.state {
 	case "list":
+		if m.filterHighlighted {
+			// filter mode activated
+			switch msg := msg.(type) {
+			case tea.WindowSizeMsg:
+				return m.UpdateWindowSize(msg.Height, msg.Width), nil
+			case tea.KeyMsg:
+				key := msg.String()
+				if key == tea.KeyEsc.String() || key == tea.KeyCtrlC.String() {
+					log.Print("Exiting filter mode")
+					m = m.ToggleFilterHighlight()
+					return m, nil
+				}
+				if key == tea.KeyBackspace.String() {
+					m = m.removeCharFromFilterValue()
+					return m, nil
+				}
+				// Handle filter input
+				m = m.appendCharToFilterValue(key)
+				return m, nil
+			}
+		}
+
 		switch msg := msg.(type) {
 		case tea.WindowSizeMsg:
 			return m.UpdateWindowSize(msg.Height, msg.Width), nil
 		case tea.KeyMsg:
 			key := msg.String()
-			if key == "esc" || key == "ctrl+c" || key == "q" {
+			if key == tea.KeyEsc.String() || key == tea.KeyCtrlC.String() || key == "q" {
 				return m, tea.Quit
 			}
 			if key == "j" {
@@ -116,7 +141,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m = m.MoveCursorUp()
 				return m, cmd.GetValue(m.ctx, m.redis, []string{m.currentKey()})
 			}
-			if key == "tab" {
+			if key == "/" {
+				m = m.ToggleFilterHighlight()
+				return m, nil
+			}
+			if key == tea.KeyTab.String() {
 				m = m.NextTab()
 				return m, cmd.UpdateDatabase(m.ctx, m.redis, m.currentTab)
 			}
@@ -197,6 +226,26 @@ func (m model) MoveCursorDown() model {
 
 func (m model) MoveCursorUp() model {
 	m.currentKeyIdx = max(m.currentKeyIdx-1, 0)
+	return m
+}
+
+func (m model) ToggleFilterHighlight() model {
+	m.filterHighlighted = !m.filterHighlighted
+	log.Printf("Filter form highlight: %t", m.filterHighlighted)
+	return m
+}
+
+func (m model) appendCharToFilterValue(key string) model {
+	m.filterValue += key
+	log.Printf("Current filter value: %s", m.filterValue)
+	return m
+}
+
+func (m model) removeCharFromFilterValue() model {
+	if len(m.filterValue) > 0 {
+		m.filterValue = m.filterValue[:len(m.filterValue)-1]
+	}
+	log.Printf("Current filter value: %s", m.filterValue)
 	return m
 }
 

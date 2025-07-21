@@ -36,6 +36,7 @@ func Render(
 	return lipgloss.JoinVertical(lipgloss.Left,
 		header,
 		tabRow,
+		component.FilterForm("Filter", "foo", width),
 		lipgloss.JoinHorizontal(lipgloss.Top,
 			keyListGroup,
 			valueDisplayGroup,
