@@ -51,15 +51,21 @@ var (
 	filterFormStyle  = lipgloss.NewStyle().PaddingLeft(1)
 )
 
-func FilterForm(label, value string, width int) string {
-	return lipgloss.NewStyle().
+func FilterForm(label, value string, active bool, width int) string {
+	form := lipgloss.NewStyle().
 		Width(width / 2).
 		BorderStyle(lipgloss.RoundedBorder()).
-		BorderForeground(gray).
-		Render(lipgloss.JoinHorizontal(lipgloss.Top,
-			filterlabelStyle.Render(label+":"),
-			filterFormStyle.Render(value),
-		))
+		BorderForeground(gray)
+
+	if active {
+		form = form.BorderForeground(white)
+	}
+
+	return form.Render(lipgloss.JoinHorizontal(lipgloss.Top,
+		filterlabelStyle.Render(label+":"),
+		filterFormStyle.Render(value),
+	))
+
 }
 
 func labelAndName(label, name string) string {

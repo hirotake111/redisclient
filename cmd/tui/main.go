@@ -117,6 +117,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m = m.removeCharFromFilterValue()
 					return m, nil
 				}
+				if key == tea.KeyEnter.String() {
+					m = m.ToggleFilterHighlight()
+					log.Printf("Filter applied: %s", m.filterValue)
+					return m, nil
+				}
 				// Handle filter input
 				m = m.appendCharToFilterValue(key)
 				return m, nil
@@ -143,6 +148,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			if key == "/" {
 				m = m.ToggleFilterHighlight()
+				m = m.ClarFilterValue()
 				return m, nil
 			}
 			if key == tea.KeyTab.String() {
@@ -182,6 +188,8 @@ func (m model) View() string {
 			m.currentKeyIdx,
 			m.value,
 			m.HostName(),
+			m.filterHighlighted,
+			m.filterValue,
 		)
 	}
 
@@ -246,6 +254,12 @@ func (m model) removeCharFromFilterValue() model {
 		m.filterValue = m.filterValue[:len(m.filterValue)-1]
 	}
 	log.Printf("Current filter value: %s", m.filterValue)
+	return m
+}
+
+func (m model) ClarFilterValue() model {
+	m.filterValue = ""
+	log.Print("Clearing filter value")
 	return m
 }
 

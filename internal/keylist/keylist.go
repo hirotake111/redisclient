@@ -14,6 +14,8 @@ func Render(
 	currentKeyIdx int,
 	value string,
 	host string,
+	filterHihghlighted bool,
+	filterValue string,
 ) string {
 	// Calculate widths
 	widthKeyListView := width / 3
@@ -32,11 +34,12 @@ func Render(
 		component.ValueDisplay(value, widthValueView),
 	)
 	header := component.Header(host)
+	filter := component.FilterForm("Filter", filterValue, filterHihghlighted, width)
 
 	return lipgloss.JoinVertical(lipgloss.Left,
 		header,
 		tabRow,
-		component.FilterForm("Filter", "foo", width),
+		filter,
 		lipgloss.JoinHorizontal(lipgloss.Top,
 			keyListGroup,
 			valueDisplayGroup,
