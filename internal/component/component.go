@@ -46,8 +46,6 @@ var (
 	headerLabelStyle = lipgloss.NewStyle().
 				PaddingTop(1)
 	TitleBarStyle = lipgloss.NewStyle().
-			BorderStyle(lipgloss.RoundedBorder()).
-			BorderForeground(gray).
 			PaddingLeft(1)
 )
 
