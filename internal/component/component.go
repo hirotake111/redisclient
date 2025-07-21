@@ -58,12 +58,10 @@ func labelAndName(label, name string) string {
 	)
 }
 
-func Header(host, db string) string {
+func Header(host string) string {
 	return lipgloss.JoinHorizontal(lipgloss.Left,
 		" ",
 		labelAndName("HOST", host),
-		"    ",
-		labelAndName("DB", db),
 	)
 }
 
@@ -99,7 +97,7 @@ func TitleBar(title string) lipgloss.Style {
 func KeyList(keys []string, cur, height, width int) string {
 	style := keyListStyle.Width(width)
 	if len(keys) == 0 {
-		return style.Render(list.New([]string{"No keys found"}).String())
+		return style.Render(" No keys found.")
 	}
 
 	listItems := make([]string, max(len(keys), height))

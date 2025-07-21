@@ -86,6 +86,9 @@ func (m model) HostName() string {
 func (m model) DB() string {
 	return fmt.Sprintf("%d", m.redis.Options().DB)
 }
+func (m model) ConnectionString() string {
+	return fmt.Sprintf("redis://%s/%d", m.HostName(), m.redis.Options().DB)
+}
 
 func (m model) Init() tea.Cmd {
 	log.Print("Initializing model...")
@@ -115,11 +118,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			if key == "tab" {
 				m = m.NextTab()
-				return m, cmd.GetValue(m.ctx, m.redis, m.currentKey())
+				return m, cmd.UpdateDatabase(m.ctx, m.redis, m.currentTab)
 			}
 			if key == tea.KeyShiftTab.String() {
 				m = m.PreviousTab()
-				return m, cmd.GetValue(m.ctx, m.redis, m.currentKey())
+				return m, cmd.UpdateDatabase(m.ctx, m.redis, m.currentTab)
 			}
 
 		case cmd.ValueMsg:
@@ -130,7 +133,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m.UpdateKeyList(msg), cmd.GetValue(m.ctx, m.redis, msg[0]) // Fetch value for the first key
 			}
 			return m.UpdateKeyList(msg), nil
+		case cmd.NewRedisClientMsg:
+			log.Print("Received new Redis client message")
+			m = m.UpdateRedisClient(msg)
+			return m, cmd.GetKeys(m.ctx, m.redis)
 		}
+
 	}
 
 	return m, nil
@@ -148,44 +156,10 @@ func (m model) View() string {
 			m.currentKeyIdx,
 			m.value,
 			m.HostName(),
-			m.DB(),
 		)
 	}
 
 	return fmt.Sprintf("Unknown state: %s", m.state)
-}
-
-func footer(label, name string) string {
-	return lipgloss.JoinHorizontal(lipgloss.Center,
-		footerLabelStyle.Render(label+":"),
-		footerStyle.Render(name),
-	)
-}
-
-func renderFooter(m model) string {
-	host := footer("HOST", m.HostName())
-	db := footer("DB", m.DB())
-
-	return lipgloss.JoinHorizontal(lipgloss.Left,
-		host,
-		db,
-	)
-}
-
-func renderValueView(value string, width int) string {
-	title := "  Value"
-	if value == "" {
-		value = "No value found for the selected key."
-	}
-
-	// Create a styled view for the value
-	style := lipgloss.NewStyle().
-		Padding(1).
-		BorderStyle(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color("240")).
-		Width(width) // Adjust width to fit within the terminal
-
-	return lipgloss.JoinVertical(lipgloss.Top, title, style.Render(value))
 }
 
 func (m model) UpdateWindowSize(height, width int) model {
@@ -234,6 +208,12 @@ func (m model) currentKey() string {
 		return ""
 	}
 	return m.keys[m.currentKeyIdx]
+}
+
+func (m model) UpdateRedisClient(msg cmd.NewRedisClientMsg) model {
+	m.redis = msg.Redis
+	log.Printf("Updating Redis client to %s", m.ConnectionString())
+	return m
 }
 
 func main() {

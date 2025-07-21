@@ -14,7 +14,6 @@ func Render(
 	currentKeyIdx int,
 	value string,
 	host string,
-	db string,
 ) string {
 	// Calculate widths
 	widthKeyListView := width / 3
@@ -32,7 +31,7 @@ func Render(
 		component.TitleBarStyle.Width(widthValueView).Render("Value"),
 		component.ValueDisplay(value, widthValueView),
 	)
-	header := component.Header(host, db)
+	header := component.Header(host)
 
 	return lipgloss.JoinVertical(lipgloss.Left,
 		header,
