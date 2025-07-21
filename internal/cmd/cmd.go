@@ -31,14 +31,19 @@ func GetKeys(ctx context.Context, redis *redis.Client) tea.Cmd {
 	}
 }
 
-func GetValue(ctx context.Context, redis *redis.Client, key string) tea.Cmd {
-	log.Printf("Fetching value for key: %s", key)
+func GetValue(ctx context.Context, redis *redis.Client, keys []string) tea.Cmd {
+	if len(keys) == 0 {
+		// Empty value display
+		return func() tea.Msg { return ValueMsg("") }
+	}
+
 	return func() tea.Msg {
-		value, err := redis.Get(ctx, key).Result()
+		log.Printf("Fetching value for key: %s", keys)
+		value, err := redis.Get(ctx, keys[0]).Result()
 		if err != nil {
 			return ErrMsg{err: err}
 		}
-		log.Printf("Fetched value for key %s: %s", key, value)
+		log.Printf("Fetched value for key %s: %s", keys, value)
 		return ValueMsg(value)
 	}
 }

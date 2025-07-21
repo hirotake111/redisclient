@@ -109,12 +109,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if key == "j" {
 				log.Print("Moving cursor down")
 				m = m.MoveCursorDown()
-				return m, cmd.GetValue(m.ctx, m.redis, m.currentKey())
+				return m, cmd.GetValue(m.ctx, m.redis, []string{m.currentKey()})
 			}
 			if key == "k" {
 				log.Print("Moving cursor up")
 				m = m.MoveCursorUp()
-				return m, cmd.GetValue(m.ctx, m.redis, m.currentKey())
+				return m, cmd.GetValue(m.ctx, m.redis, []string{m.currentKey()})
 			}
 			if key == "tab" {
 				m = m.NextTab()
@@ -129,10 +129,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m.UpdateValue(msg), nil
 
 		case cmd.KeysUpdatedMsg:
-			if len(msg) > 0 {
-				return m.UpdateKeyList(msg), cmd.GetValue(m.ctx, m.redis, msg[0]) // Fetch value for the first key
-			}
-			return m.UpdateKeyList(msg), nil
+			return m.UpdateKeyList(msg), cmd.GetValue(m.ctx, m.redis, msg) // Fetch value for the first key
 		case cmd.NewRedisClientMsg:
 			log.Print("Received new Redis client message")
 			m = m.UpdateRedisClient(msg)

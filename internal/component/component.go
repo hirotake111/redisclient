@@ -66,10 +66,6 @@ func Header(host string) string {
 }
 
 func ValueDisplay(value string, width int) string {
-	if value == "" {
-		value = "No value found for the selected key."
-	}
-
 	return lipgloss.NewStyle().
 		Padding(1).
 		BorderStyle(lipgloss.RoundedBorder()).
