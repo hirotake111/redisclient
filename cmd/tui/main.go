@@ -130,6 +130,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 
+		// filter mode not activated
 		switch msg := msg.(type) {
 		case tea.WindowSizeMsg:
 			return m.UpdateWindowSize(msg.Height, msg.Width), nil
@@ -190,7 +191,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m.UpdateValue(msg), nil
 
 		case cmd.KeysUpdatedMsg:
-			log.Printf("Received keys updated message: %+v", msg)
+			log.Printf("Received keys updated message. len: %d. cursor: %d", len(msg.Keys), msg.RedisCursor)
 			m = m.UpdateKeyList(msg)
 			if len(msg.Keys) == 0 {
 				log.Print("No keys found, returning empty value")
@@ -201,8 +202,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case cmd.NewRedisClientMsg:
 			log.Print("Received new Redis client message")
-			m = m.UpdateRedisClient(msg).ClearCurrentKeyIdx()
+			m = m.UpdateRedisClient(msg).ClearCurrentKeyIdx().ClearKeyHistory().ClearRedisCursor()
 			return m, cmd.GetKeys(m.ctx, m.redis, m.RedisCursor)
+
+		case cmd.ErrMsg:
+			log.Printf("Error occurred: %s", msg.Err)
 		}
 
 	}
@@ -364,6 +368,19 @@ func (m model) UpdateRedisClient(msg cmd.NewRedisClientMsg) model {
 func (m model) ClearCurrentKeyIdx() model {
 	m.currentKeyIdx = 0
 	log.Print("Clearing key index position")
+	return m
+}
+
+func (m model) ClearKeyHistory() model {
+	m.keys = [][]string{}
+	m.keyHistoryIdx = 0
+	log.Print("Clearing key history")
+	return m
+}
+
+func (m model) ClearRedisCursor() model {
+	m.RedisCursor = 0
+	log.Print("Clearing Redis cursor")
 	return m
 }
 

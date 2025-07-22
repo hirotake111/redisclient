@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"log"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -12,7 +14,7 @@ const (
 	keysPreQuery = 20
 )
 
-type ErrMsg struct{ err error }
+type ErrMsg struct{ Err error }
 
 type KeysUpdatedMsg struct {
 	Keys        []string
@@ -35,7 +37,7 @@ func GetKeys(ctx context.Context, redis *redis.Client, cursor uint64) tea.Cmd {
 		// keys, err := redis.Keys(ctx, "*").Result()
 		keys, cursor, err := redis.Scan(ctx, cursor, "", keysPreQuery).Result()
 		if err != nil {
-			return ErrMsg{err: err}
+			return ErrMsg{Err: err}
 		}
 		log.Printf("Fetched %d keys from Redis. Cursor: %d", len(keys), cursor)
 		return KeysUpdatedMsg{Keys: keys, RedisCursor: cursor}
@@ -44,13 +46,33 @@ func GetKeys(ctx context.Context, redis *redis.Client, cursor uint64) tea.Cmd {
 
 func GetValue(ctx context.Context, redis *redis.Client, key string) tea.Cmd {
 	return func() tea.Msg {
-		log.Printf("Fetching value for key: %s", key)
-		value, err := redis.Get(ctx, key).Result()
+		t, err := redis.Type(ctx, key).Result()
 		if err != nil {
-			return ErrMsg{err: err}
+			return ErrMsg{Err: err}
 		}
-		log.Printf("Fetched value for key %s: %s", key, value)
-		return ValueMsg(value)
+		log.Printf("Fetching value for key %s of type %s", key, t)
+		switch t {
+		case "string":
+			value, err := redis.Get(ctx, key).Result()
+			if err != nil {
+				return ErrMsg{Err: err}
+			}
+			log.Printf("Fetched value for key %s: %s", key, value)
+			return ValueMsg(value)
+
+		case "hash":
+			hm, err := redis.HGetAll(ctx, key).Result()
+			if err != nil {
+				return ErrMsg{Err: err}
+			}
+			bytes, err := json.Marshal(hm)
+			if err != nil {
+				return ErrMsg{Err: err}
+			}
+			return ValueMsg(string(bytes))
+		}
+
+		return ErrMsg{Err: fmt.Errorf("unsupported type %s for key %s", t, key)}
 	}
 }
 
@@ -60,7 +82,7 @@ func UpdateDatabase(ctx context.Context, client *redis.Client, db int) tea.Cmd {
 	nc := redis.NewClient(client.Options())
 	return func() tea.Msg {
 		if _, err := nc.Ping(ctx).Result(); err != nil {
-			return ErrMsg{err: err}
+			return ErrMsg{Err: err}
 		}
 		log.Printf("Switched to Redis database %d", db)
 		return NewRedisClientMsg{Redis: nc} // No message needed for successful DB switch
