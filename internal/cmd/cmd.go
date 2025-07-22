@@ -15,8 +15,8 @@ const (
 type ErrMsg struct{ err error }
 
 type KeysUpdatedMsg struct {
-	Keys   []string
-	Cursor uint64
+	Keys        []string
+	RedisCursor uint64
 }
 
 type ValueMsg string
@@ -38,7 +38,7 @@ func GetKeys(ctx context.Context, redis *redis.Client, cursor uint64) tea.Cmd {
 			return ErrMsg{err: err}
 		}
 		log.Printf("Fetched %d keys from Redis. Cursor: %d", len(keys), cursor)
-		return KeysUpdatedMsg{Keys: keys, Cursor: cursor}
+		return KeysUpdatedMsg{Keys: keys, RedisCursor: cursor}
 	}
 }
 

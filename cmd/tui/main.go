@@ -65,10 +65,9 @@ const (
 type model struct {
 	ctx context.Context // Context for app
 
-	keys          []string   // List of keys fetched from redis
 	currentKeyIdx int        // Current key index in the list
-	KeysCursor    uint64     // Cursor position in the database
-	keyHistory    [][]string // History of keys fetched
+	RedisCursor   uint64     // Cursor position in the database
+	keys          [][]string // History of keys fetched
 	keyHistoryIdx int        // Current index in the key history
 
 	tabs       int // Number of tabs
@@ -98,7 +97,7 @@ func (m model) ConnectionString() string {
 
 func (m model) Init() tea.Cmd {
 	log.Print("Initializing model...")
-	return cmd.GetKeys(m.ctx, m.redis, m.KeysCursor)
+	return cmd.GetKeys(m.ctx, m.redis, m.RedisCursor)
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -155,24 +154,28 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 			if key == "n" {
+				log.Print("key 'n' pressed, moving to next key list")
 				if m.HasNextHistory() {
+					log.Print("Next history exists, moving to next key list")
 					m = m.NextHistory()
+					return m, cmd.GetValue(m.ctx, m.redis, m.currentKey()) // Fetch value for the current key
 				}
 				if m.HasMoreKeysOnServer() {
-					log.Print("Moving to next key list")
-					return m, cmd.GetKeys(m.ctx, m.redis, m.KeysCursor) // Fetch keys for the new tab
+					log.Print("Fetching a next key list from server")
+					return m, cmd.GetKeys(m.ctx, m.redis, m.RedisCursor) // Fetch keys for the new tab
 				}
 				log.Print("No more keys to fetch")
 				return m, nil
 			}
 			if key == "p" {
+				log.Print("key 'p' pressed, moving to previous key list")
 				if m.HasPreviousKeys() {
 					log.Print("Moving to previous key list")
 					m = m.PreviousHistory()
 				} else {
 					log.Print("No previous keys to fetch")
 				}
-				return m, nil
+				return m, cmd.GetValue(m.ctx, m.redis, m.currentKey()) // Fetch value for the current key
 			}
 			if key == tea.KeyTab.String() {
 				m = m.NextTab()
@@ -198,8 +201,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case cmd.NewRedisClientMsg:
 			log.Print("Received new Redis client message")
-			m = m.UpdateRedisClient(msg).ClearCursor()
-			return m, cmd.GetKeys(m.ctx, m.redis, m.KeysCursor)
+			m = m.UpdateRedisClient(msg).ClearCurrentKeyIdx()
+			return m, cmd.GetKeys(m.ctx, m.redis, m.RedisCursor)
 		}
 
 	}
@@ -215,7 +218,7 @@ func (m model) View() string {
 			m.height,
 			m.tabs,
 			m.currentTab,
-			m.keys,
+			m.CurrentKeyList(),
 			m.currentKeyIdx,
 			m.value,
 			m.HostName(),
@@ -234,11 +237,23 @@ func (m model) UpdateWindowSize(height, width int) model {
 }
 
 func (m model) UpdateKeyList(msg cmd.KeysUpdatedMsg) model {
-	m.keys = msg.Keys
-	m.KeysCursor = msg.Cursor
-	m.keyHistory = append(m.keyHistory, msg.Keys)
-	m.keyHistoryIdx = len(m.keyHistory) - 1 // Reset to the latest history
+	m.RedisCursor = msg.RedisCursor
+	m.keys = append(m.keys, msg.Keys)
+	m.keyHistoryIdx = len(m.keys) - 1 // Reset to the latest history
+	m = m.ClearCurrentKeyIdx()
 	return m
+}
+
+func (m model) CurrentKeyList() []string {
+	if len(m.keys) == 0 {
+		log.Print("No keys available in the current history")
+		return []string{}
+	}
+	return m.keys[m.keyHistoryIdx]
+}
+
+func (m model) CurrentKey() string {
+	return m.CurrentKeyList()[m.currentKeyIdx]
 }
 
 func (m model) UpdateValue(msg cmd.ValueMsg) model {
@@ -253,11 +268,11 @@ func (m model) NextTab() model {
 }
 
 func (m model) NextHistory() model {
-	if m.keyHistoryIdx < len(m.keyHistory)-1 {
+	if m.keyHistoryIdx < len(m.keys)-1 {
 		m.keyHistoryIdx++
-		m.keys = m.keyHistory[m.keyHistoryIdx]
-		m = m.ClearCursor()
+		m = m.ClearCurrentKeyIdx()
 		log.Printf("Moved to next history[%d]", m.keyHistoryIdx)
+		log.Printf("Current key list: %v", m.CurrentKeyList())
 	} else {
 		log.Print("No more history to navigate")
 	}
@@ -267,8 +282,7 @@ func (m model) NextHistory() model {
 func (m model) PreviousHistory() model {
 	if m.keyHistoryIdx > 0 {
 		m.keyHistoryIdx--
-		m.keys = m.keyHistory[m.keyHistoryIdx]
-		m = m.ClearCursor()
+		m = m.ClearCurrentKeyIdx()
 		log.Printf("Moved to previous history[%d]", m.keyHistoryIdx)
 	} else {
 		log.Print("No previous history to navigate")
@@ -286,7 +300,8 @@ func (m model) PreviousTab() model {
 }
 
 func (m model) MoveCursorDown() model {
-	m.currentKeyIdx = min(m.currentKeyIdx+1, len(m.keys)-1)
+	m.currentKeyIdx = min(m.currentKeyIdx+1, len(m.CurrentKeyList())-1)
+	log.Printf("Cursor moved down to index %d", m.currentKeyIdx)
 	return m
 }
 
@@ -302,11 +317,11 @@ func (m model) ToggleFilterHighlight() model {
 }
 
 func (m model) HasNextHistory() bool {
-	return m.keyHistoryIdx < len(m.keyHistory)-1
+	return m.keyHistoryIdx < len(m.keys)-1
 }
 
 func (m model) HasMoreKeysOnServer() bool {
-	return m.KeysCursor > 0
+	return m.RedisCursor > 0
 }
 
 func (m model) HasPreviousKeys() bool {
@@ -334,10 +349,10 @@ func (m model) ClarFilterValue() model {
 }
 
 func (m model) currentKey() string {
-	if m.currentKeyIdx < 0 || m.currentKeyIdx >= len(m.keys) {
+	if m.currentKeyIdx < 0 || m.currentKeyIdx >= len(m.CurrentKeyList()) {
 		return ""
 	}
-	return m.keys[m.currentKeyIdx]
+	return m.CurrentKeyList()[m.currentKeyIdx]
 }
 
 func (m model) UpdateRedisClient(msg cmd.NewRedisClientMsg) model {
@@ -346,9 +361,9 @@ func (m model) UpdateRedisClient(msg cmd.NewRedisClientMsg) model {
 	return m
 }
 
-func (m model) ClearCursor() model {
+func (m model) ClearCurrentKeyIdx() model {
 	m.currentKeyIdx = 0
-	log.Print("Clearing cursor position")
+	log.Print("Clearing key index position")
 	return m
 }
 
