@@ -8,9 +8,16 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
+const (
+	keysPreQuery = 20
+)
+
 type ErrMsg struct{ err error }
 
-type KeysUpdatedMsg []string
+type KeysUpdatedMsg struct {
+	Keys   []string
+	Cursor uint64
+}
 
 type ValueMsg string
 
@@ -18,32 +25,31 @@ type NewRedisClientMsg struct {
 	Redis *redis.Client
 }
 
-func GetKeys(ctx context.Context, redis *redis.Client) tea.Cmd {
-	log.Print("Fetching keys from Redis...")
+func DisplayEmptyValue() tea.Msg {
+	return ValueMsg("")
+}
+
+func GetKeys(ctx context.Context, redis *redis.Client, cursor uint64) tea.Cmd {
 	return func() tea.Msg {
-		log.Print("Executing Redis KEYS command...")
-		keys, err := redis.Keys(ctx, "*").Result()
+		log.Print("Fetching keys from Redis...")
+		// keys, err := redis.Keys(ctx, "*").Result()
+		keys, cursor, err := redis.Scan(ctx, cursor, "", keysPreQuery).Result()
 		if err != nil {
 			return ErrMsg{err: err}
 		}
-		log.Printf("Fetched %d keys from Redis", len(keys))
-		return KeysUpdatedMsg(keys)
+		log.Printf("Fetched %d keys from Redis. Cursor: %d", len(keys), cursor)
+		return KeysUpdatedMsg{Keys: keys, Cursor: cursor}
 	}
 }
 
-func GetValue(ctx context.Context, redis *redis.Client, keys []string) tea.Cmd {
-	if len(keys) == 0 {
-		// Empty value display
-		return func() tea.Msg { return ValueMsg("") }
-	}
-
+func GetValue(ctx context.Context, redis *redis.Client, key string) tea.Cmd {
 	return func() tea.Msg {
-		log.Printf("Fetching value for key: %s", keys)
-		value, err := redis.Get(ctx, keys[0]).Result()
+		log.Printf("Fetching value for key: %s", key)
+		value, err := redis.Get(ctx, key).Result()
 		if err != nil {
 			return ErrMsg{err: err}
 		}
-		log.Printf("Fetched value for key %s: %s", keys, value)
+		log.Printf("Fetched value for key %s: %s", key, value)
 		return ValueMsg(value)
 	}
 }
