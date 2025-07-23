@@ -14,7 +14,38 @@ func (m Model) Init() tea.Cmd {
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch m.state {
-	case "list":
+	case UpdateValueState:
+		//
+		// UPDATE VALUE STATE
+		//
+		switch msg := msg.(type) {
+		case tea.WindowSizeMsg:
+			return m.UpdateWindowSize(msg.Height, msg.Width), nil
+		case tea.KeyMsg:
+			key := msg.String()
+			if key == tea.KeyEsc.String() || key == tea.KeyCtrlC.String() || key == tea.KeyTab.String() || key == tea.KeyShiftTab.String() {
+				log.Print("Exiting value update state")
+				m = m.ToListState()
+				return m, nil
+			}
+			if key == tea.KeyEnter.String() {
+				log.Print("Enter key pressed, performing value update")
+				return m, cmd.UpdateValue(m.ctx, m.redis, m.currentKey(), m.formValue)
+			}
+			if key == tea.KeyBackspace.String() {
+				log.Print("Backspace key pressed, removing last character from value")
+				m = m.removeCharFromFormValue()
+				return m, nil
+			}
+		//TODO: add key to form value
+
+		case cmd.ErrMsg:
+			log.Printf("Error occurred: %s", msg.Err)
+		}
+
+	// END OF UPDATE VALUE STATE
+
+	case ListState:
 		if m.filterHighlighted {
 			//
 			// FILTER MODE ACTIVATED
@@ -67,6 +98,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				log.Print("Moving cursor up")
 				m = m.MoveCursorUp()
 				return m, cmd.GetValue(m.ctx, m.redis, m.currentKey())
+			}
+			if key == tea.KeyEnter.String() {
+				log.Print("Enter key pressed, open value update window")
+				m = m.ToValueUpdateState()
+				return m, nil
 			}
 			if key == "/" {
 				log.Print("Filter mode activated")

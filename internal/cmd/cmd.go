@@ -80,6 +80,17 @@ func GetValue(ctx context.Context, redis *redis.Client, key string) tea.Cmd {
 	}
 }
 
+func UpdateValue(ctx context.Context, client *redis.Client, key string, newValue string) tea.Cmd {
+	return func() tea.Msg {
+		log.Printf("Updating key %s with new value %s", key, newValue)
+		if err := client.Set(ctx, key, newValue, 0).Err(); err != nil {
+			return ErrMsg{Err: err}
+		}
+		log.Printf("Updated key %s successfully", key)
+		return ValueMsg(newValue) // Return the new value as a message
+	}
+}
+
 func DeleteKey(ctx context.Context, client *redis.Client, key string) tea.Cmd {
 	return func() tea.Msg {
 		log.Printf("Deleting key %s from Redis", key)

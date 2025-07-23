@@ -54,8 +54,9 @@ var (
 type State string
 
 const (
-	tabSize         = 16 // Default number of database indexes
-	ListState State = "list"
+	tabSize                = 16 // Default number of database indexes
+	ListState        State = "list"
+	UpdateValueState State = "update_value"
 )
 
 type Model struct {
@@ -65,6 +66,8 @@ type Model struct {
 	redisCursor   uint64     // Cursor position in the database
 	keys          [][]string // History of keys fetched
 	keyHistoryIdx int        // Current index in the key history
+
+	formValue string // Value for the form in update state
 
 	tabs       int // Number of tabs
 	currentTab int // Current tab index
@@ -284,5 +287,28 @@ func (m Model) DeleteKeyFromList(key string) Model {
 func (m Model) ToggleHelpWindow() Model {
 	log.Print("Toggling help window")
 	m.displayHelp = !m.displayHelp
+	return m
+}
+
+func (m Model) ToValueUpdateState() Model {
+	log.Print("Switching to value update state")
+	m.state = UpdateValueState
+	return m
+}
+
+func (m Model) ToListState() Model {
+	log.Print("Switching to list state")
+	m.state = ListState
+	m.displayHelp = false // Hide help window when switching back to list state
+	return m
+}
+
+func (m Model) removeCharFromFormValue() Model {
+	if len(m.formValue) > 0 {
+		m.formValue = m.formValue[:len(m.formValue)-1]
+		log.Printf("Removed last character from form value: %s", m.formValue)
+	} else {
+		log.Print("Form value is already empty")
+	}
 	return m
 }
