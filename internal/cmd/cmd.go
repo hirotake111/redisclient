@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	keysPreQuery = 20
+	keysPreQuery = 40 // Number of keys to prefetch when scanning Redis
 )
 
 type ErrMsg struct{ Err error }
