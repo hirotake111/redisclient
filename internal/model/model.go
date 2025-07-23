@@ -281,8 +281,8 @@ func (m Model) DeleteKeyFromList(key string) Model {
 	return m
 }
 
-func (m Model) DisplayHelpWindow() Model {
-	log.Print("Displaying help window")
-	m.displayHelp = true
+func (m Model) ToggleHelpWindow() Model {
+	log.Print("Toggling help window")
+	m.displayHelp = !m.displayHelp
 	return m
 }

@@ -50,15 +50,20 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m.UpdateWindowSize(msg.Height, msg.Width), nil
 		case tea.KeyMsg:
 			key := msg.String()
+			if m.displayHelp {
+				log.Print("Exiting help window")
+				m = m.ToggleHelpWindow()
+				return m, nil
+			}
 			if key == tea.KeyEsc.String() || key == tea.KeyCtrlC.String() || key == "q" {
 				return m, tea.Quit
 			}
-			if key == "j" {
+			if key == "j" || key == tea.KeyDown.String() {
 				log.Print("Moving cursor down")
 				m = m.MoveCursorDown()
 				return m, cmd.GetValue(m.ctx, m.redis, m.currentKey())
 			}
-			if key == "k" {
+			if key == "k" || key == tea.KeyUp.String() {
 				log.Print("Moving cursor up")
 				m = m.MoveCursorUp()
 				return m, cmd.GetValue(m.ctx, m.redis, m.currentKey())
@@ -113,7 +118,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			if key == "?" {
 				log.Print("key '?' pressed, showing help")
-				return m.DisplayHelpWindow(), nil
+				return m.ToggleHelpWindow(), nil
 			}
 
 		case cmd.ValueMsg:

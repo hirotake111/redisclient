@@ -130,10 +130,13 @@ func KeyList(keys []string, cur, height, width int) string {
 
 func HelpWindow() string {
 	helpText := "Help:\n" +
-		"  - Use arrow keys to navigate\n" +
-		"  - Press Enter to select a key\n" +
-		"  - Type to filter keys\n" +
-		"  - Press 'q' to quit\n"
+		"  - j/k (or arrow keys): navigate key list\n" +
+		"  - Enter: Update highlighted key\n" +
+		"  - d: Delete highlighted key\n" +
+		"  - /: Filter keys\n" +
+		"  - n: Next key list\n" +
+		"  - p: Previous key list\n" +
+		"  - q or Esc or Ctrl-c:  quit\n"
 
 	return lipgloss.NewStyle().
 		Padding(1).
