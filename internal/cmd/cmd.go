@@ -27,6 +27,10 @@ type NewRedisClientMsg struct {
 	Redis *redis.Client
 }
 
+type KeyDeletedMsg struct {
+	Key string
+}
+
 func DisplayEmptyValue() tea.Msg {
 	return ValueMsg("")
 }
@@ -73,6 +77,17 @@ func GetValue(ctx context.Context, redis *redis.Client, key string) tea.Cmd {
 		}
 
 		return ErrMsg{Err: fmt.Errorf("unsupported type %s for key %s", t, key)}
+	}
+}
+
+func DeleteKey(ctx context.Context, client *redis.Client, key string) tea.Cmd {
+	return func() tea.Msg {
+		log.Printf("Deleting key %s from Redis", key)
+		if err := client.Del(ctx, key).Err(); err != nil {
+			return ErrMsg{Err: err}
+		}
+		log.Printf("Deleted key %s successfully", key)
+		return KeyDeletedMsg{Key: key}
 	}
 }
 
