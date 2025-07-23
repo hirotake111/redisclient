@@ -109,6 +109,8 @@ func TitleBar(title string) lipgloss.Style {
 
 func KeyList(keys []string, cur, height, width int) string {
 	style := keyListStyle.Width(width)
+	maxWidthKey := max(0, width-4)
+
 	var keyFound = true
 	if len(keys) == 0 {
 		keys = []string{"No keys found."}
@@ -118,7 +120,11 @@ func KeyList(keys []string, cur, height, width int) string {
 	listItems := make([]string, max(len(keys), height))
 	for i := range listItems {
 		if i < len(keys) {
-			listItems[i] = keys[i]
+			if maxWidthKey > 3 && len(keys[i]) > maxWidthKey {
+				listItems[i] = keys[i][:maxWidthKey-3] + "..." // Truncate long keys
+			} else {
+				listItems[i] = keys[i]
+			}
 		} else {
 			listItems[i] = "" // Fill remaining space with empty strings
 		}
