@@ -7,21 +7,6 @@ import (
 	"github.com/charmbracelet/lipgloss/list"
 )
 
-const (
-	tl  = "╭" // Top left corner for key list
-	tr  = "╮" // Top right corner for key list
-	bl  = "╰" // Bottom left corner for key list
-	br  = "╯" // Bottom right corner for key list
-	hl  = "─" // Horizontal line for key list
-	vl  = "│" // Vertical line for key list
-	dhl = "═" // Double horizontal line for key list
-	dvl = "║" // Double vertical line for key list
-	tld = "╔" // Top left double corner for key list
-	trd = "╗" // Top right double corner for key list
-	bld = "╚" // Bottom left double corner for key list
-	brd = "╝" // Bottom right double corner for key list
-)
-
 var (
 	gray  = lipgloss.Color("240") // Gray color for general text
 	red   = lipgloss.Color("196") // Red color for error messages
@@ -141,4 +126,18 @@ func KeyList(keys []string, cur, height, width int) string {
 		ItemStyleFunc(func(items list.Items, i int) lipgloss.Style { return lipgloss.NewStyle() })
 
 	return style.Render(l.String())
+}
+
+func HelpWindow() string {
+	helpText := "Help:\n" +
+		"  - Use arrow keys to navigate\n" +
+		"  - Press Enter to select a key\n" +
+		"  - Type to filter keys\n" +
+		"  - Press 'q' to quit\n"
+
+	return lipgloss.NewStyle().
+		Padding(1).
+		BorderStyle(lipgloss.DoubleBorder()).
+		BorderForeground(gray).
+		Render(helpText)
 }
