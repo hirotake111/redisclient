@@ -16,13 +16,7 @@ func Render(
 	host string,
 	filterHihghlighted bool,
 	filterValue string,
-	displayHelp bool,
 ) string {
-	if displayHelp {
-		helpWindow := component.HelpWindow()
-		return lipgloss.Place(width, height, lipgloss.Center, lipgloss.Center, helpWindow)
-	}
-
 	// Calculate widths
 	widthKeyListView := width / 3
 	heightKeyListView := height - 10                // Adjust for header and footer

@@ -54,9 +54,9 @@ var (
 type State string
 
 const (
-	tabSize                = 16 // Default number of database indexes
-	ListState        State = "list"
-	UpdateValueState State = "update_value"
+	tabSize               = 16 // Default number of database indexes
+	ListState       State = "list"
+	HelpWindowState State = "help"
 )
 
 type Model struct {
@@ -81,8 +81,6 @@ type Model struct {
 
 	filterHighlighted bool   // Indicates if the filter form is highlighted
 	filterValue       string // Stores the value for the filter form
-
-	displayHelp bool // Flag to display help window
 }
 
 func NewModel(ctx context.Context, redis *redis.Client) Model {
@@ -284,22 +282,15 @@ func (m Model) DeleteKeyFromList(key string) Model {
 	return m
 }
 
-func (m Model) ToggleHelpWindow() Model {
-	log.Print("Toggling help window")
-	m.displayHelp = !m.displayHelp
-	return m
-}
-
-func (m Model) ToValueUpdateState() Model {
-	log.Print("Switching to value update state")
-	m.state = UpdateValueState
-	return m
-}
-
 func (m Model) ToListState() Model {
 	log.Print("Switching to list state")
 	m.state = ListState
-	m.displayHelp = false // Hide help window when switching back to list state
+	return m
+}
+
+func (m Model) toHelpWindowState() Model {
+	log.Print("Switching to help window state")
+	m.state = HelpWindowState
 	return m
 }
 
