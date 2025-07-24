@@ -36,7 +36,7 @@ var (
 	filterFormStyle  = lipgloss.NewStyle().PaddingLeft(1)
 )
 
-func FilterForm(label, value string, active bool, width int) string {
+func Form(label, value string, active bool, width int) string {
 	form := lipgloss.NewStyle().
 		Width(width / 2).
 		BorderStyle(lipgloss.RoundedBorder()).

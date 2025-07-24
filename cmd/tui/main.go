@@ -37,7 +37,7 @@ func main() {
 
 	m := model.NewModel(ctx, r)
 
-	p := tea.NewProgram(m, tea.WithAltScreen())
+	p := tea.NewProgram(m, tea.WithAltScreen(), tea.WithoutBracketedPaste())
 	if _, err := p.Run(); err != nil {
 		log.Printf("Error running program: %v\n", err)
 		os.Exit(1)

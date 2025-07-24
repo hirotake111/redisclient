@@ -16,6 +16,8 @@ func Render(
 	host string,
 	filterHihghlighted bool,
 	filterValue string,
+	valueFormActive bool,
+	updateFormValue string,
 ) string {
 	// Calculate widths
 	widthKeyListView := width / 3
@@ -34,12 +36,18 @@ func Render(
 		component.ValueDisplay(value, widthValueView),
 	)
 	header := component.Header(host)
-	filter := component.FilterForm("Filter", filterValue, filterHihghlighted, width)
+
+	var form string
+	if valueFormActive {
+		form = component.Form("New Value", updateFormValue, true, width)
+	} else {
+		form = component.Form("Filter", filterValue, filterHihghlighted, width)
+	}
 
 	app := lipgloss.JoinVertical(lipgloss.Left,
 		header,
 		tabRow,
-		filter,
+		form,
 		lipgloss.JoinHorizontal(lipgloss.Top,
 			keyListGroup,
 			valueDisplayGroup,

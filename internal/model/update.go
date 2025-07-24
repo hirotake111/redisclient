@@ -34,6 +34,35 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	// END OF UPDATE VALUE STATE
 
 	case ListState:
+		if m.valueFormActive {
+			//
+			// UPDATE VALUE FORM ACTIVATED
+			//
+			switch msg := msg.(type) {
+			case tea.WindowSizeMsg:
+				return m.UpdateWindowSize(msg.Height, msg.Width), nil
+			case tea.KeyMsg:
+				key := msg.String()
+				if key == tea.KeyEsc.String() || key == tea.KeyCtrlC.String() {
+					log.Print("Exiting update value form")
+					return m.toggleUpdateValueForm(), nil
+				}
+				if key == tea.KeyEnter.String() {
+					log.Printf("Updating value for key: %s", m.currentKey())
+					return m, cmd.UpdateValue(m.ctx, m.redis, m.currentKey(), m.formValue)
+				}
+				if key == tea.KeyBackspace.String() {
+					m = m.removeCharFromFormValue()
+					return m, nil
+				}
+				// Handle form input
+				log.Printf("Appending character '%s' to form value", key)
+				m = m.appendCharToFormValue(key)
+				return m, nil
+			}
+			return m, nil
+
+		}
 		if m.filterHighlighted {
 			//
 			// FILTER MODE ACTIVATED
@@ -63,7 +92,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 
-		// filter mode not activated
+		// List mode (defalt)
 		switch msg := msg.(type) {
 		case tea.WindowSizeMsg:
 			return m.UpdateWindowSize(msg.Height, msg.Width), nil
@@ -83,9 +112,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, cmd.GetValue(m.ctx, m.redis, m.currentKey())
 			}
 			if key == tea.KeyEnter.String() {
-				log.Print("Enter key pressed, open value update window")
-				// TODO: implement a way to open value update form
-				return m, nil
+				log.Print("Enter key pressed, activate value update form")
+				return m.toggleUpdateValueForm(), nil
 			}
 			if key == "/" {
 				log.Print("Filter mode activated")
@@ -116,6 +144,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					log.Print("No previous keys to fetch")
 				}
 				return m, cmd.GetValue(m.ctx, m.redis, m.currentKey()) // Fetch value for the current key
+			}
+			if key == "y" {
+				if m.value == "" {
+					return m, nil // No current key to copy
+				}
+				log.Print("key 'c' pressed, copying value of current key to clipboard")
+				return m, cmd.CopyValueToClipboard(m.ctx, m.value)
 			}
 			if key == tea.KeyTab.String() {
 				m = m.NextTab()

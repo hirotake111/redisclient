@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"os/exec"
+	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/redis/go-redis/v9"
@@ -30,6 +32,8 @@ type NewRedisClientMsg struct {
 type KeyDeletedMsg struct {
 	Key string
 }
+
+type CopySuccessMsg struct{}
 
 func DisplayEmptyValue() tea.Msg {
 	return ValueMsg("")
@@ -61,7 +65,7 @@ func GetValue(ctx context.Context, redis *redis.Client, key string) tea.Cmd {
 			if err != nil {
 				return ErrMsg{Err: err}
 			}
-			log.Printf("Fetched value for key %s: %s", key, value)
+			log.Printf("Fetched value for key %s", key)
 			return ValueMsg(value)
 
 		case "hash":
@@ -112,5 +116,23 @@ func UpdateDatabase(ctx context.Context, client *redis.Client, db int) tea.Cmd {
 		}
 		log.Printf("Switched to Redis database %d", db)
 		return NewRedisClientMsg{Redis: nc} // No message needed for successful DB switch
+	}
+}
+
+func CopyValueToClipboard(ctx context.Context, value string) tea.Cmd {
+	return func() tea.Msg {
+		var truncated = value
+		if len(value) > 10 {
+			truncated = value[:10] + "..." // Truncate long values for logging
+		}
+		log.Printf("Copying value to clipboard: %s", truncated)
+		// TODO: Implement platform-specific clipboard handling
+		command := exec.Command("pbcopy")
+		command.Stdin = strings.NewReader(value)
+		if err := command.Run(); err != nil {
+			return ErrMsg{Err: fmt.Errorf("failed to copy value to clipboard: %w", err)}
+		}
+		log.Print("Value copied to clipboard successfully")
+		return CopySuccessMsg{}
 	}
 }

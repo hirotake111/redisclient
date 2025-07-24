@@ -67,7 +67,8 @@ type Model struct {
 	keys          [][]string // History of keys fetched
 	keyHistoryIdx int        // Current index in the key history
 
-	formValue string // Value for the form in update state
+	valueFormActive bool   // Indicates if the new value form is active
+	formValue       string // Value for the form in update state
 
 	tabs       int // Number of tabs
 	currentTab int // Current tab index
@@ -139,7 +140,6 @@ func (m Model) CurrentKey() string {
 
 func (m Model) UpdateValue(msg cmd.ValueMsg) Model {
 	m.value = string(msg)
-	log.Printf("new value: %s", m.value)
 	return m
 }
 
@@ -291,6 +291,19 @@ func (m Model) ToListState() Model {
 func (m Model) toHelpWindowState() Model {
 	log.Print("Switching to help window state")
 	m.state = HelpWindowState
+	return m
+}
+
+func (m Model) toggleUpdateValueForm() Model {
+	log.Print("Activating update value form")
+	m.valueFormActive = !m.valueFormActive
+	m.formValue = ""
+	return m
+}
+
+func (m Model) appendCharToFormValue(key string) Model {
+	log.Print("Appending character to form value")
+	m.formValue += key
 	return m
 }
 

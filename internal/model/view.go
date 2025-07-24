@@ -21,6 +21,8 @@ func (m Model) View() string {
 			m.HostName(),
 			m.filterHighlighted,
 			m.filterValue,
+			m.valueFormActive,
+			m.formValue,
 		)
 
 	case HelpWindowState:
