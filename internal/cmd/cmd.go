@@ -66,7 +66,7 @@ func GetValue(ctx context.Context, redis *redis.Client, key string) tea.Cmd {
 				return ErrMsg{Err: err}
 			}
 			log.Printf("Fetched value for key %s", key)
-			return ValueMsg(value)
+			return ValueMsg(escapeCharacter(value))
 
 		case "hash":
 			hm, err := redis.HGetAll(ctx, key).Result()
@@ -82,6 +82,22 @@ func GetValue(ctx context.Context, redis *redis.Client, key string) tea.Cmd {
 
 		return ErrMsg{Err: fmt.Errorf("unsupported type %s for key %s", t, key)}
 	}
+}
+
+func escapeCharacter(value string) string {
+	// Escape special characters for display
+	// This is a simple example; you can expand it as needed
+	bytes := make([]byte, 0, len(value))
+	for _, b := range value {
+		// Append ASCII characters only
+		if b >= 32 && b <= 126 {
+			bytes = append(bytes, byte(b))
+		} else {
+			// Replace non-ASCII characters with a tofu
+			bytes = append(bytes, '?')
+		}
+	}
+	return string(bytes)
 }
 
 func UpdateValue(ctx context.Context, client *redis.Client, key string, newValue string) tea.Cmd {
