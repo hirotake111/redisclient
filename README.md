@@ -20,3 +20,11 @@ go run ./cmd/tui
 export REDIS_URL=redis://your-redis-host:6379
 go run ./cmd/tui
 ```
+
+### TODOs
+
+- View gets broken when value is too long
+- Display TTL for keys
+- Display error message
+- Make filter work
+- Update readme and help window

@@ -14,30 +14,18 @@ func (m Model) Init() tea.Cmd {
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch m.state {
-	case UpdateValueState:
-		//
-		// UPDATE VALUE STATE
-		//
+	case HelpWindowState:
 		switch msg := msg.(type) {
 		case tea.WindowSizeMsg:
 			return m.UpdateWindowSize(msg.Height, msg.Width), nil
 		case tea.KeyMsg:
 			key := msg.String()
-			if key == tea.KeyEsc.String() || key == tea.KeyCtrlC.String() || key == tea.KeyTab.String() || key == tea.KeyShiftTab.String() {
-				log.Print("Exiting value update state")
-				m = m.ToListState()
-				return m, nil
+			if key == tea.KeyCtrlC.String() {
+				log.Print("Exiting app...")
+				return m, tea.Quit
 			}
-			if key == tea.KeyEnter.String() {
-				log.Print("Enter key pressed, performing value update")
-				return m, cmd.UpdateValue(m.ctx, m.redis, m.currentKey(), m.formValue)
-			}
-			if key == tea.KeyBackspace.String() {
-				log.Print("Backspace key pressed, removing last character from value")
-				m = m.removeCharFromFormValue()
-				return m, nil
-			}
-		//TODO: add key to form value
+			log.Print("Closing help window")
+			return m.ToListState(), nil
 
 		case cmd.ErrMsg:
 			log.Printf("Error occurred: %s", msg.Err)
@@ -46,6 +34,35 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	// END OF UPDATE VALUE STATE
 
 	case ListState:
+		if m.valueFormActive {
+			//
+			// UPDATE VALUE FORM ACTIVATED
+			//
+			switch msg := msg.(type) {
+			case tea.WindowSizeMsg:
+				return m.UpdateWindowSize(msg.Height, msg.Width), nil
+			case tea.KeyMsg:
+				key := msg.String()
+				if key == tea.KeyEsc.String() || key == tea.KeyCtrlC.String() {
+					log.Print("Exiting update value form")
+					return m.toggleUpdateValueForm(), nil
+				}
+				if key == tea.KeyEnter.String() {
+					log.Printf("Updating value for key: %s", m.currentKey())
+					return m.toggleUpdateValueForm(), cmd.UpdateValue(m.ctx, m.redis, m.currentKey(), m.formValue)
+				}
+				if key == tea.KeyBackspace.String() {
+					m = m.removeCharFromFormValue()
+					return m, nil
+				}
+				// Handle form input
+				log.Printf("Appending character '%s' to form value", key)
+				m = m.appendCharToFormValue(key)
+				return m, nil
+			}
+			return m, nil
+
+		}
 		if m.filterHighlighted {
 			//
 			// FILTER MODE ACTIVATED
@@ -75,17 +92,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 
-		// filter mode not activated
+		// List mode (defalt)
 		switch msg := msg.(type) {
 		case tea.WindowSizeMsg:
 			return m.UpdateWindowSize(msg.Height, msg.Width), nil
 		case tea.KeyMsg:
 			key := msg.String()
-			if m.displayHelp {
-				log.Print("Exiting help window")
-				m = m.ToggleHelpWindow()
-				return m, nil
-			}
 			if key == tea.KeyEsc.String() || key == tea.KeyCtrlC.String() || key == "q" {
 				return m, tea.Quit
 			}
@@ -100,9 +112,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, cmd.GetValue(m.ctx, m.redis, m.currentKey())
 			}
 			if key == tea.KeyEnter.String() {
-				log.Print("Enter key pressed, open value update window")
-				m = m.ToValueUpdateState()
-				return m, nil
+				log.Print("Enter key pressed, activate value update form")
+				return m.toggleUpdateValueForm(), nil
 			}
 			if key == "/" {
 				log.Print("Filter mode activated")
@@ -134,6 +145,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 				return m, cmd.GetValue(m.ctx, m.redis, m.currentKey()) // Fetch value for the current key
 			}
+			if key == "y" {
+				if m.value == "" {
+					return m, nil // No current key to copy
+				}
+				log.Print("key 'c' pressed, copying value of current key to clipboard")
+				return m, cmd.CopyValueToClipboard(m.ctx, m.value)
+			}
 			if key == tea.KeyTab.String() {
 				m = m.NextTab()
 				return m, cmd.UpdateDatabase(m.ctx, m.redis, m.currentTab)
@@ -154,7 +172,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			if key == "?" {
 				log.Print("key '?' pressed, showing help")
-				return m.ToggleHelpWindow(), nil
+				return m.toHelpWindowState(), nil
 			}
 
 		case cmd.ValueMsg:
