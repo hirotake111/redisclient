@@ -49,7 +49,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 				if key == tea.KeyEnter.String() {
 					log.Printf("Updating value for key: %s", m.currentKey())
-					return m, cmd.UpdateValue(m.ctx, m.redis, m.currentKey(), m.formValue)
+					return m.toggleUpdateValueForm(), cmd.UpdateValue(m.ctx, m.redis, m.currentKey(), m.formValue)
 				}
 				if key == tea.KeyBackspace.String() {
 					m = m.removeCharFromFormValue()
