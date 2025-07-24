@@ -28,3 +28,5 @@ go run ./cmd/tui
 - Display error message
 - Make filter work
 - Update readme and help window
+- SCAN with search query
+- Bulk delete keys
