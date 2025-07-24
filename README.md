@@ -23,7 +23,6 @@ go run ./cmd/tui
 
 ### TODOs
 
-- View gets broken when value is too long
 - Display TTL for keys
 - Display error message
 - Make filter work

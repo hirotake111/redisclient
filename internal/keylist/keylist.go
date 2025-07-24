@@ -22,6 +22,7 @@ func Render(
 	// Calculate widths
 	widthKeyListView := width / 3
 	heightKeyListView := height - 10                // Adjust for header and footer
+	heightValueView := height - 10                  // Adjust for header and footer
 	widthValueView := width - widthKeyListView - 10 // Adjust for padding and borders
 
 	tabRow := component.TabRow(tabs, currentTab)
@@ -33,7 +34,7 @@ func Render(
 
 	valueDisplayGroup := lipgloss.JoinVertical(lipgloss.Top,
 		component.TitleBarStyle.Width(widthValueView).Render("Value"),
-		component.ValueDisplay(value, widthValueView),
+		component.ValueDisplay(value, widthValueView, heightValueView),
 	)
 	header := component.Header(host)
 

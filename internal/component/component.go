@@ -67,9 +67,13 @@ func Header(host string) string {
 	)
 }
 
-func ValueDisplay(value string, width int) string {
+func ValueDisplay(value string, width, height int) string {
+	maxChrs := (width - 2) * (height - 1) // Adjust for padding and borders
+	if len(value) > maxChrs {
+		value = value[:maxChrs-3] + "..." // Truncate long values
+	}
 	return lipgloss.NewStyle().
-		Padding(1).
+		Padding(0, 1).
 		BorderStyle(lipgloss.RoundedBorder()).
 		BorderForeground(lipgloss.Color("240")).
 		Width(width).
@@ -102,7 +106,7 @@ func KeyList(keys []string, cur, height, width int) string {
 		keyFound = false
 	}
 
-	listItems := make([]string, max(len(keys), height))
+	listItems := make([]string, min(len(keys), height))
 	for i := range listItems {
 		if i < len(keys) {
 			if maxWidthKey > 3 && len(keys[i]) > maxWidthKey {
