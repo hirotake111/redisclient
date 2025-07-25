@@ -43,7 +43,7 @@ func Form(label, value string, active bool, width int) string {
 		BorderForeground(gray)
 
 	if active {
-		form = form.BorderForeground(white)
+		form = form.BorderForeground(blue)
 	}
 
 	return form.Render(lipgloss.JoinHorizontal(lipgloss.Top,
@@ -96,8 +96,11 @@ func TitleBar(title string) lipgloss.Style {
 	return TitleBarStyle.SetString(title)
 }
 
-func KeyList(keys []string, cur, height, width int) string {
+func KeyList(keys []string, cur, height, width int, highlighted bool) string {
 	style := keyListStyle.Width(width)
+	if highlighted {
+		style = style.BorderForeground(blue)
+	}
 	maxWidthKey := max(0, width-4)
 
 	var keyFound = true
@@ -127,7 +130,12 @@ func KeyList(keys []string, cur, height, width int) string {
 			}
 			return ""
 		}).
-		ItemStyleFunc(func(items list.Items, i int) lipgloss.Style { return lipgloss.NewStyle() })
+		ItemStyleFunc(func(items list.Items, i int) lipgloss.Style {
+			if i == cur && keyFound {
+				return lipgloss.NewStyle().Background(green)
+			}
+			return lipgloss.NewStyle()
+		})
 
 	return style.Render(l.String())
 }

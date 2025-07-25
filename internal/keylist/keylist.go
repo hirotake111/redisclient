@@ -29,7 +29,7 @@ func Render(
 	keyListTitle := component.TitleBarStyle.
 		Width(widthKeyListView).
 		Render("Keys")
-	keyList := component.KeyList(keys, currentKeyIdx, heightKeyListView, widthKeyListView)
+	keyList := component.KeyList(keys, currentKeyIdx, heightKeyListView, widthKeyListView, !filterHihghlighted && !valueFormActive)
 	keyListGroup := lipgloss.JoinVertical(lipgloss.Top, keyListTitle, keyList)
 
 	valueDisplayGroup := lipgloss.JoinVertical(lipgloss.Top,
