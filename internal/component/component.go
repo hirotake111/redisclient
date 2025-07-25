@@ -156,3 +156,13 @@ func HelpWindow() string {
 		BorderForeground(gray).
 		Render(helpText)
 }
+
+func TTLIndicator(ttl int64) string {
+	if ttl < 0 {
+		return ""
+	}
+	if ttl == 0 {
+		return ""
+	}
+	return " (expires in " + strconv.FormatInt(ttl, 10) + " seconds)"
+}

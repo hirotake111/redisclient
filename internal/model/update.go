@@ -146,11 +146,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, cmd.GetValue(m.ctx, m.redis, m.currentKey()) // Fetch value for the current key
 			}
 			if key == "y" {
-				if m.value == "" {
+				if m.value.Data() == "" {
 					return m, nil // No current key to copy
 				}
 				log.Print("key 'c' pressed, copying value of current key to clipboard")
-				return m, cmd.CopyValueToClipboard(m.ctx, m.value)
+				return m, cmd.CopyValueToClipboard(m.ctx, m.value.Data())
 			}
 			if key == tea.KeyTab.String() {
 				m = m.NextTab()
@@ -183,7 +183,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m = m.UpdateKeyList(msg)
 			if len(msg.Keys) == 0 {
 				log.Print("No keys found, returning empty value")
-				m.value = ""
+				m.EmptyValue()
 				return m, cmd.DisplayEmptyValue
 			}
 			return m, cmd.GetValue(m.ctx, m.redis, m.currentKey()) // Fetch value for the first key

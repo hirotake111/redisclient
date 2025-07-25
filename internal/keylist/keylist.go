@@ -3,6 +3,7 @@ package keylist
 import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/hirotake111/redisclient/internal/component"
+	"github.com/hirotake111/redisclient/internal/values"
 )
 
 func Render(
@@ -12,7 +13,7 @@ func Render(
 	currentTab int,
 	keys []string,
 	currentKeyIdx int,
-	value string,
+	value values.Value,
 	host string,
 	filterHihghlighted bool,
 	filterValue string,
@@ -33,8 +34,11 @@ func Render(
 	keyListGroup := lipgloss.JoinVertical(lipgloss.Top, keyListTitle, keyList)
 
 	valueDisplayGroup := lipgloss.JoinVertical(lipgloss.Top,
-		component.TitleBarStyle.Width(widthValueView).Render("Value"),
-		component.ValueDisplay(value, widthValueView, heightValueView),
+		lipgloss.JoinHorizontal(lipgloss.Left,
+			component.TitleBarStyle.Render("Value"),
+			component.TTLIndicator(value.TTL()),
+		),
+		component.ValueDisplay(value.Data(), widthValueView, heightValueView),
 	)
 	header := component.Header(host)
 

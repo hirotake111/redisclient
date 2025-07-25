@@ -40,6 +40,7 @@ func GetValue(ctx context.Context, redis *redis.Client, key string) tea.Cmd {
 			return ErrMsg{Err: err}
 		}
 		log.Printf("Fetching value for key %s of type %s", key, t)
+		var newValue string
 		switch t {
 		case "string":
 			value, err := redis.Get(ctx, key).Result()
@@ -47,9 +48,7 @@ func GetValue(ctx context.Context, redis *redis.Client, key string) tea.Cmd {
 				return ErrMsg{Err: err}
 			}
 			log.Printf("Fetched value for key %s", key)
-			return ValueUpdatedMsg{
-				NewValue: escapeCharacter(value),
-			}
+			newValue = escapeCharacter(value)
 
 		case "hash":
 			hm, err := redis.HGetAll(ctx, key).Result()
@@ -60,12 +59,21 @@ func GetValue(ctx context.Context, redis *redis.Client, key string) tea.Cmd {
 			if err != nil {
 				return ErrMsg{Err: err}
 			}
-			return ValueUpdatedMsg{
-				NewValue: (string(bytes)),
-			}
+			newValue = (string(bytes))
+
+		default:
+			return ErrMsg{Err: fmt.Errorf("unsupported type %s for key %s", t, key)}
 		}
 
-		return ErrMsg{Err: fmt.Errorf("unsupported type %s for key %s", t, key)}
+		log.Printf("Fetching TTL for key %s of type %s", key, t)
+		ttl, err := redis.TTL(ctx, key).Result()
+		if err != nil {
+			log.Printf("Error fetching TTL for key %s: %v", key, err)
+		}
+		return ValueUpdatedMsg{
+			NewValue: newValue,
+			TTL:      int64(ttl.Seconds()), // Convert TTL to seconds
+		}
 	}
 }
 

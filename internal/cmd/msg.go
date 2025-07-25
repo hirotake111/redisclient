@@ -13,7 +13,7 @@ type KeysUpdatedMsg struct {
 
 type ValueUpdatedMsg struct {
 	NewValue string // The new value for the key
-	TTL      int    // Time to live for the key, if applicable
+	TTL      int64  // Time to live for the key, if applicable
 }
 
 type NewRedisClientMsg struct {

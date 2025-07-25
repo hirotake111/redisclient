@@ -7,6 +7,7 @@ import (
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/hirotake111/redisclient/internal/cmd"
+	"github.com/hirotake111/redisclient/internal/values"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -78,7 +79,7 @@ type Model struct {
 
 	state State         // View state
 	redis *redis.Client // Redis client instance
-	value string        // Stores the value for the current key
+	value values.Value  // Stores the value for the current key
 
 	filterHighlighted bool   // Indicates if the filter form is highlighted
 	filterValue       string // Stores the value for the filter form
@@ -139,7 +140,7 @@ func (m Model) CurrentKey() string {
 }
 
 func (m Model) UpdateValue(msg cmd.ValueUpdatedMsg) Model {
-	m.value = msg.NewValue
+	m.value = values.NewValue(msg.NewValue, msg.TTL)
 	return m
 }
 
@@ -314,5 +315,11 @@ func (m Model) removeCharFromFormValue() Model {
 	} else {
 		log.Print("Form value is already empty")
 	}
+	return m
+}
+
+func (m Model) EmptyValue() Model {
+	log.Print("Clearing value")
+	m.value = values.Value{}
 	return m
 }
