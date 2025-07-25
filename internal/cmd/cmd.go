@@ -78,19 +78,18 @@ func GetValue(ctx context.Context, redis *redis.Client, key string) tea.Cmd {
 }
 
 func escapeCharacter(value string) string {
-	// Escape special characters for display
-	// This is a simple example; you can expand it as needed
-	bytes := make([]byte, 0, len(value))
-	for _, b := range value {
-		// Append ASCII characters only
-		if b >= 32 && b <= 126 {
-			bytes = append(bytes, byte(b))
-		} else {
+	runes := make([]rune, 0, len(value))
+	log.Printf("before: %s", value)
+	for _, r := range value {
+		if r < 32 {
 			// Replace non-ASCII characters with a tofu
-			bytes = append(bytes, '?')
+			runes = append(runes, '🫥')
+		} else {
+			runes = append(runes, r)
 		}
 	}
-	return string(bytes)
+	log.Printf("after: %s", string(runes))
+	return string(runes)
 }
 
 func UpdateValue(ctx context.Context, client *redis.Client, key string, newValue string) tea.Cmd {
