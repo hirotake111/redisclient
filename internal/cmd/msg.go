@@ -1,0 +1,27 @@
+package cmd
+
+import (
+	"github.com/redis/go-redis/v9"
+)
+
+type ErrMsg struct{ Err error }
+
+type KeysUpdatedMsg struct {
+	Keys        []string
+	RedisCursor uint64
+}
+
+type ValueUpdatedMsg struct {
+	NewValue string // The new value for the key
+	TTL      int    // Time to live for the key, if applicable
+}
+
+type NewRedisClientMsg struct {
+	Redis *redis.Client
+}
+
+type KeyDeletedMsg struct {
+	Key string
+}
+
+type CopySuccessMsg struct{}

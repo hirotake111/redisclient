@@ -175,7 +175,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m.toHelpWindowState(), nil
 			}
 
-		case cmd.ValueMsg:
+		case cmd.ValueUpdatedMsg:
 			return m.UpdateValue(msg), nil
 
 		case cmd.KeysUpdatedMsg:

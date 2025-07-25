@@ -138,8 +138,8 @@ func (m Model) CurrentKey() string {
 	return m.CurrentKeyList()[m.currentKeyIdx]
 }
 
-func (m Model) UpdateValue(msg cmd.ValueMsg) Model {
-	m.value = string(msg)
+func (m Model) UpdateValue(msg cmd.ValueUpdatedMsg) Model {
+	m.value = msg.NewValue
 	return m
 }
 

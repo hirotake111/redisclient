@@ -16,27 +16,8 @@ const (
 	keysPreQuery = 40 // Number of keys to prefetch when scanning Redis
 )
 
-type ErrMsg struct{ Err error }
-
-type KeysUpdatedMsg struct {
-	Keys        []string
-	RedisCursor uint64
-}
-
-type ValueMsg string
-
-type NewRedisClientMsg struct {
-	Redis *redis.Client
-}
-
-type KeyDeletedMsg struct {
-	Key string
-}
-
-type CopySuccessMsg struct{}
-
 func DisplayEmptyValue() tea.Msg {
-	return ValueMsg("")
+	return ValueUpdatedMsg{}
 }
 
 func GetKeys(ctx context.Context, redis *redis.Client, cursor uint64) tea.Cmd {
@@ -66,7 +47,9 @@ func GetValue(ctx context.Context, redis *redis.Client, key string) tea.Cmd {
 				return ErrMsg{Err: err}
 			}
 			log.Printf("Fetched value for key %s", key)
-			return ValueMsg(escapeCharacter(value))
+			return ValueUpdatedMsg{
+				NewValue: escapeCharacter(value),
+			}
 
 		case "hash":
 			hm, err := redis.HGetAll(ctx, key).Result()
@@ -77,7 +60,9 @@ func GetValue(ctx context.Context, redis *redis.Client, key string) tea.Cmd {
 			if err != nil {
 				return ErrMsg{Err: err}
 			}
-			return ValueMsg(string(bytes))
+			return ValueUpdatedMsg{
+				NewValue: (string(bytes)),
+			}
 		}
 
 		return ErrMsg{Err: fmt.Errorf("unsupported type %s for key %s", t, key)}
@@ -107,7 +92,9 @@ func UpdateValue(ctx context.Context, client *redis.Client, key string, newValue
 			return ErrMsg{Err: err}
 		}
 		log.Printf("Updated key %s successfully", key)
-		return ValueMsg(newValue) // Return the new value as a message
+		return ValueUpdatedMsg{
+			NewValue: newValue,
+		}
 	}
 }
 
