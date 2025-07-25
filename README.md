@@ -23,7 +23,6 @@ go run ./cmd/tui
 
 ### TODOs
 
-- Display TTL for keys
 - Display error message
 - Make filter work
 - Update readme and help window
