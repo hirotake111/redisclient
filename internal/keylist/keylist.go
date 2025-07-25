@@ -21,9 +21,9 @@ func Render(
 ) string {
 	// Calculate widths
 	widthKeyListView := width / 3
-	heightKeyListView := height - 10                // Adjust for header and footer
-	heightValueView := height - 10                  // Adjust for header and footer
-	widthValueView := width - widthKeyListView - 10 // Adjust for padding and borders
+	heightKeyListView := height - 10               // Adjust for header and footer
+	heightValueView := height - 10                 // Adjust for header and footer
+	widthValueView := width - widthKeyListView - 5 // Adjust for padding and borders
 
 	tabRow := component.TabRow(tabs, currentTab)
 	keyListTitle := component.TitleBarStyle.

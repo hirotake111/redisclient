@@ -68,7 +68,7 @@ func Header(host string) string {
 }
 
 func ValueDisplay(value string, width, height int) string {
-	maxChrs := (width - 2) * (height - 1) // Adjust for padding and borders
+	maxChrs := (width - 2) * (height - 2) / 2 // Adjust for padding and borders
 	if len(value) > maxChrs {
 		value = value[:maxChrs-3] + "..." // Truncate long values
 	}
