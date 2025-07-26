@@ -23,8 +23,8 @@ go run ./cmd/tui
 
 ### TODOs
 
-- Display error message
+- Display error message on command execution failure
 - Make filter work
-- Update readme and help window
 - SCAN with search query
 - Bulk delete keys
+- Update readme and help window

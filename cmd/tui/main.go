@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os"
 
@@ -16,7 +17,7 @@ func main() {
 	// Initialize logger to write to temp file
 	if err := logger.Initialize(); err != nil {
 		// If logger fails, print to stderr and exit
-		log.Printf("Failed to initialize logger: %v\n", err)
+		fmt.Printf("Failed to initialize logger: %v\n", err)
 		os.Exit(1)
 	}
 	log.Print("Logger initialized successfully")
@@ -25,22 +26,23 @@ func main() {
 
 	cfg, err := config.GetConfigFromEnv()
 	if err != nil {
-		log.Printf("Failed to get config from environment: %v\n", err)
+		fmt.Printf("Failed to get config from environment: %v\n", err)
 		os.Exit(1)
 	}
 
 	r := redis.NewClient(cfg.Option)
 	if _, err := r.Ping(ctx).Result(); err != nil {
-		log.Fatalf("Failed to connect to Redis at %s - %v", cfg.Option.Addr, err)
+		fmt.Printf("Failed to connect to Redis at %s - %v\n", cfg.Option.Addr, err)
 		os.Exit(1)
 	}
 
 	m := model.NewModel(ctx, r)
 
+	log.Println("Starting app now...")
 	p := tea.NewProgram(m, tea.WithAltScreen(), tea.WithoutBracketedPaste())
 	if _, err := p.Run(); err != nil {
-		log.Printf("Error running program: %v\n", err)
+		fmt.Printf("Error running program: %v\n", err)
 		os.Exit(1)
 	}
-	log.Print("Program exited successfully")
+	fmt.Println("Program exited successfully")
 }
