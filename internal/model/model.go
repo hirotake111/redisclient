@@ -127,6 +127,7 @@ func (m Model) CurrentKey() string {
 
 func (m Model) UpdateValue(msg cmd.ValueUpdatedMsg) Model {
 	m.value = values.NewValue(msg.NewValue, msg.TTL)
+	m.errorMsg = "test" // debugging purpose
 	return m
 }
 

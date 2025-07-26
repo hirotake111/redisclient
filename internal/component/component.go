@@ -8,12 +8,12 @@ import (
 )
 
 var (
-	gray  = lipgloss.Color("240") // Gray color for general text
-	red   = lipgloss.Color("196") // Red color for error messages
-	pink  = lipgloss.Color("205") // Red color for error messages
-	green = lipgloss.Color("34")  // Green color for success messages
-	blue  = lipgloss.Color("33")  // Blue color for info messages
-	white = lipgloss.Color("255") // White color for text
+	blue  = lipgloss.Color("33")      // Blue color for info messages
+	gray  = lipgloss.Color("240")     // Gray color for general text
+	green = lipgloss.Color("34")      // Green color for success messages
+	pink  = lipgloss.Color("205")     // Pink color for error messages
+	red   = lipgloss.Color("#f70a8c") // Red color for error messages
+	white = lipgloss.Color("255")     // White color for text
 
 	// Styles for various UI components
 	tabStyle = lipgloss.NewStyle().
@@ -77,6 +77,7 @@ func ValueDisplay(value string, width, height int) string {
 		BorderStyle(lipgloss.RoundedBorder()).
 		BorderForeground(lipgloss.Color("240")).
 		Width(width).
+		Height(height).
 		Render(value)
 }
 
@@ -165,4 +166,19 @@ func TTLIndicator(ttl int64) string {
 		return ""
 	}
 	return " (expires in " + strconv.FormatInt(ttl, 10) + " seconds)"
+}
+
+func ErrorBox(msg string, width, height int) string {
+	var color = gray
+	if msg != "" {
+		color = red
+	}
+
+	return lipgloss.NewStyle().
+		Width(width).
+		Height(height).
+		BorderStyle(lipgloss.RoundedBorder()).
+		BorderForeground(color).
+		Foreground(color).
+		Render(msg)
 }

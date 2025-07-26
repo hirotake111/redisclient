@@ -19,12 +19,15 @@ func Render(
 	filterValue string,
 	valueFormActive bool,
 	updateFormValue string,
+	errorMsg string,
 ) string {
 	// Calculate widths
 	widthKeyListView := width / 3
-	heightKeyListView := height - 10               // Adjust for header and footer
-	heightValueView := height - 10                 // Adjust for header and footer
-	widthValueView := width - widthKeyListView - 5 // Adjust for padding and borders
+	heightKeyListView := height - 10 // Adjust for header and footer
+	heightRightPane := height - 10   // Adjust for header and footer
+	heightValueDisplay := heightRightPane - 6
+	heightErrorBox := 3                            // Space for error messages
+	widthRightPane := width - widthKeyListView - 5 // Adjust for padding and borders
 
 	tabRow := component.TabRow(tabs, currentTab)
 	keyListTitle := component.TitleBarStyle.
@@ -38,7 +41,8 @@ func Render(
 			component.TitleBarStyle.Render("Value"),
 			component.TTLIndicator(value.TTL()),
 		),
-		component.ValueDisplay(value.Data(), widthValueView, heightValueView),
+		component.ValueDisplay(value.Data(), widthRightPane, heightValueDisplay),
+		component.ErrorBox(errorMsg, widthRightPane, heightErrorBox),
 	)
 	header := component.Header(host)
 

@@ -23,6 +23,7 @@ func (m Model) View() string {
 			m.filterValue,
 			m.valueFormActive,
 			m.formValue,
+			m.errorMsg,
 		)
 
 	case HelpWindowState:

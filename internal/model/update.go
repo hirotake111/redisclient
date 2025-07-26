@@ -18,6 +18,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.UpdateErrorMessage(err.Err)
 	}
 	if msg, ok := msg.(tea.WindowSizeMsg); ok {
+		log.Printf("Received window size message: height=%d, width=%d", msg.Height, msg.Width)
 		return m.UpdateWindowSize(msg.Height, msg.Width), nil
 	}
 
