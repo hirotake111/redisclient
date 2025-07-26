@@ -11,21 +11,6 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-const (
-	tl  = "╭" // Top left corner for key list
-	tr  = "╮" // Top right corner for key list
-	bl  = "╰" // Bottom left corner for key list
-	br  = "╯" // Bottom right corner for key list
-	hl  = "─" // Horizontal line for key list
-	vl  = "│" // Vertical line for key list
-	dhl = "═" // Double horizontal line for key list
-	dvl = "║" // Double vertical line for key list
-	tld = "╔" // Top left double corner for key list
-	trd = "╗" // Top right double corner for key list
-	bld = "╚" // Bottom left double corner for key list
-	brd = "╝" // Bottom right double corner for key list
-)
-
 var (
 	gray  = lipgloss.Color("240") // Gray color for general text
 	red   = lipgloss.Color("196") // Red color for error messages
@@ -61,7 +46,8 @@ const (
 )
 
 type Model struct {
-	ctx context.Context // Context for app
+	ctx      context.Context // Context for app
+	errorMsg string          // Indicates if the app is quitting
 
 	currentKeyIdx int        // Current key index in the list
 	redisCursor   uint64     // Cursor position in the database
@@ -321,5 +307,17 @@ func (m Model) removeCharFromFormValue() Model {
 func (m Model) EmptyValue() Model {
 	log.Print("Clearing value")
 	m.value = values.Value{}
+	return m
+}
+
+func (m Model) UpdateErrorMessage(err error) Model {
+	log.Println("Updating error message")
+	m.errorMsg = err.Error()
+	return m
+}
+
+func (m Model) ClearErrorMessage() Model {
+	log.Print("Clearing error message")
+	m.errorMsg = ""
 	return m
 }

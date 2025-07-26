@@ -13,11 +13,17 @@ func (m Model) Init() tea.Cmd {
 }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if err, ok := msg.(cmd.ErrMsg); ok {
+		log.Printf("Received error message: %s", err.Err)
+		m.UpdateErrorMessage(err.Err)
+	}
+	if msg, ok := msg.(tea.WindowSizeMsg); ok {
+		return m.UpdateWindowSize(msg.Height, msg.Width), nil
+	}
+
 	switch m.state {
 	case HelpWindowState:
 		switch msg := msg.(type) {
-		case tea.WindowSizeMsg:
-			return m.UpdateWindowSize(msg.Height, msg.Width), nil
 		case tea.KeyMsg:
 			key := msg.String()
 			if key == tea.KeyCtrlC.String() {
@@ -26,9 +32,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			log.Print("Closing help window")
 			return m.ToListState(), nil
-
-		case cmd.ErrMsg:
-			log.Printf("Error occurred: %s", msg.Err)
 		}
 
 	// END OF UPDATE VALUE STATE
@@ -39,8 +42,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			// UPDATE VALUE FORM ACTIVATED
 			//
 			switch msg := msg.(type) {
-			case tea.WindowSizeMsg:
-				return m.UpdateWindowSize(msg.Height, msg.Width), nil
 			case tea.KeyMsg:
 				key := msg.String()
 				if key == tea.KeyEsc.String() || key == tea.KeyCtrlC.String() {
@@ -68,8 +69,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			// FILTER MODE ACTIVATED
 			//
 			switch msg := msg.(type) {
-			case tea.WindowSizeMsg:
-				return m.UpdateWindowSize(msg.Height, msg.Width), nil
 			case tea.KeyMsg:
 				key := msg.String()
 				if key == tea.KeyEsc.String() || key == tea.KeyCtrlC.String() {
@@ -94,8 +93,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		// List mode (defalt)
 		switch msg := msg.(type) {
-		case tea.WindowSizeMsg:
-			return m.UpdateWindowSize(msg.Height, msg.Width), nil
 		case tea.KeyMsg:
 			key := msg.String()
 			if key == tea.KeyEsc.String() || key == tea.KeyCtrlC.String() || key == "q" {
@@ -197,9 +194,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			log.Print("Received new Redis client message")
 			m = m.UpdateRedisClient(msg).ClearCurrentKeyIdx().ClearKeyHistory().ClearRedisCursor()
 			return m, cmd.GetKeys(m.ctx, m.redis, m.redisCursor)
-
-		case cmd.ErrMsg:
-			log.Printf("Error occurred: %s", msg.Err)
 		}
 
 	}
