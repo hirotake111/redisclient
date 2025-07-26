@@ -2,6 +2,7 @@ package model
 
 import (
 	"log"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/hirotake111/redisclient/internal/cmd"
@@ -15,11 +16,20 @@ func (m Model) Init() tea.Cmd {
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if err, ok := msg.(cmd.ErrMsg); ok {
 		log.Printf("Received error message: %s", err.Err)
-		m.UpdateErrorMessage(err.Err)
+		return m.UpdateErrorMessage(err.Err), cmd.TickAndClear(5*time.Second, "error")
 	}
+
 	if msg, ok := msg.(tea.WindowSizeMsg); ok {
 		log.Printf("Received window size message: height=%d, width=%d", msg.Height, msg.Width)
 		return m.UpdateWindowSize(msg.Height, msg.Width), nil
+	}
+
+	if msg, ok := msg.(cmd.TimedOutMsg); ok {
+		switch msg.Kind {
+		case "error":
+			return m.ClearErrorMessage(), nil
+		}
+		return m, nil // No action for other timeout kinds
 	}
 
 	switch m.state {

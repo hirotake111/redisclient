@@ -6,6 +6,10 @@ import (
 
 type ErrMsg struct{ Err error }
 
+type TimedOutMsg struct {
+	Kind string // Type of timeout, e.g., "network", "error", "redis", etc.
+}
+
 type KeysUpdatedMsg struct {
 	Keys        []string
 	RedisCursor uint64

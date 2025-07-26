@@ -28,3 +28,4 @@ go run ./cmd/tui
 - SCAN with search query
 - Bulk delete keys
 - Update readme and help window
+- Allow to type characters only in input field

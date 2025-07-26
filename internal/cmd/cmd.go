@@ -7,6 +7,7 @@ import (
 	"log"
 	"os/exec"
 	"strings"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/redis/go-redis/v9"
@@ -60,6 +61,10 @@ func GetValue(ctx context.Context, redis *redis.Client, key string) tea.Cmd {
 				return ErrMsg{Err: err}
 			}
 			newValue = (string(bytes))
+
+		case "none": // Key does not exist
+			newValue = ""
+			return ErrMsg{Err: fmt.Errorf("key %s does not exist in the database", key)}
 
 		default:
 			return ErrMsg{Err: fmt.Errorf("unsupported type %s for key %s", t, key)}
@@ -145,4 +150,12 @@ func CopyValueToClipboard(ctx context.Context, value string) tea.Cmd {
 		log.Print("Value copied to clipboard successfully")
 		return CopySuccessMsg{}
 	}
+}
+
+// TickAndClear creates a command that ticks every duration and returns a TimedOutMsg.
+func TickAndClear(duration time.Duration, kind string) tea.Cmd {
+	return tea.Tick(duration, func(t time.Time) tea.Msg {
+		return TimedOutMsg{Kind: kind}
+	})
+
 }
