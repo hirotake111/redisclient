@@ -1,7 +1,7 @@
 APP_NAME=redisclient
 BIN_DIR=bin
 
-.PHONY: build run test clean
+.PHONY: build run test clean fake-data
 
 build:
 	go build -o $(BIN_DIR)/$(APP_NAME) ./cmd/tui
@@ -14,3 +14,6 @@ test:
 
 clean:
 	rm -f $(BIN_DIR)/$(APP_NAME)
+
+fake-data: # Generate fake data for testing
+	go run ./script/data.go
