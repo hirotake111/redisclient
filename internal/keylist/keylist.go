@@ -1,6 +1,8 @@
 package keylist
 
 import (
+	"fmt"
+
 	"github.com/charmbracelet/lipgloss"
 	"github.com/hirotake111/redisclient/internal/component"
 	"github.com/hirotake111/redisclient/internal/values"
@@ -20,20 +22,22 @@ func Render(
 	valueFormActive bool,
 	updateFormValue string,
 	errorMsg string,
+	page int,
+	cursor int,
 ) string {
 	// Calculate widths
 	widthKeyListView := width / 3
-	heightKeyListView := height - 10 // Adjust for header and footer
-	heightRightPane := height - 10   // Adjust for header and footer
-	heightValueDisplay := heightRightPane - 6
+	heightLeftPane := height - 10  // Adjust for header and footer
+	heightRightPane := height - 10 // Adjust for header and footer
+	heightValueDisplay := heightRightPane - 5
 	heightErrorBox := 3                            // Space for error messages
 	widthRightPane := width - widthKeyListView - 5 // Adjust for padding and borders
 
 	tabRow := component.TabRow(tabs, currentTab)
 	keyListTitle := component.TitleBarStyle.
 		Width(widthKeyListView).
-		Render("Keys")
-	keyList := component.KeyList(keys, currentKeyIdx, heightKeyListView, widthKeyListView, !filterHihghlighted && !valueFormActive)
+		Render(fmt.Sprintf("Keys (page: %d, cursor: %d)", page, cursor))
+	keyList := component.KeyList(keys, currentKeyIdx, heightLeftPane, widthKeyListView, !filterHihghlighted && !valueFormActive)
 	keyListGroup := lipgloss.JoinVertical(lipgloss.Top, keyListTitle, keyList)
 
 	valueDisplayGroup := lipgloss.JoinVertical(lipgloss.Top,

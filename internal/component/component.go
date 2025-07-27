@@ -98,7 +98,7 @@ func TitleBar(title string) lipgloss.Style {
 }
 
 func KeyList(keys []string, cur, height, width int, highlighted bool) string {
-	style := keyListStyle.Width(width)
+	style := keyListStyle.Width(width).Height(height)
 	if highlighted {
 		style = style.BorderForeground(blue)
 	}
@@ -124,7 +124,6 @@ func KeyList(keys []string, cur, height, width int, highlighted bool) string {
 	}
 
 	l := list.New(listItems).
-		ItemStyle(style).
 		Enumerator(func(items list.Items, i int) string {
 			if i == cur && keyFound {
 				return "▶ " // Current item indicator

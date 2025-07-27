@@ -14,18 +14,17 @@ import (
 )
 
 const (
-	keysPreQuery = 40 // Number of keys to prefetch when scanning Redis
+	keysPreQuery = 30 // Number of keys to prefetch when scanning Redis
 )
 
 func DisplayEmptyValue() tea.Msg {
 	return ValueUpdatedMsg{}
 }
 
-func GetKeys(ctx context.Context, redis *redis.Client, cursor uint64) tea.Cmd {
+func GetKeys(ctx context.Context, redis *redis.Client, cursor uint64, pattern string) tea.Cmd {
 	return func() tea.Msg {
-		log.Print("Fetching keys from Redis...")
-		// keys, err := redis.Keys(ctx, "*").Result()
-		keys, cursor, err := redis.Scan(ctx, cursor, "", keysPreQuery).Result()
+		log.Printf("Fetching keys from Redis with pattern \"%s\" with cursor %d ...", pattern, cursor)
+		keys, cursor, err := redis.Scan(ctx, cursor, pattern, keysPreQuery).Result()
 		if err != nil {
 			return ErrMsg{Err: err}
 		}

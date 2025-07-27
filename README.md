@@ -23,9 +23,7 @@ go run ./cmd/tui
 
 ### TODOs
 
-- Display error message on command execution failure
-- Make filter work
-- SCAN with search query
 - Bulk delete keys
 - Update readme and help window
 - Allow to type characters only in input field
+- Navigation with arrow keys on key list

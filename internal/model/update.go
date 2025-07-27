@@ -10,7 +10,7 @@ import (
 
 func (m Model) Init() tea.Cmd {
 	log.Print("Initializing model...")
-	return cmd.GetKeys(m.ctx, m.redis, m.redisCursor)
+	return cmd.GetKeys(m.ctx, m.redis, m.redisCursor, m.filterValue)
 }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -92,9 +92,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					return m, nil
 				}
 				if key == tea.KeyEnter.String() {
-					m = m.ToggleFilterHighlight()
 					log.Printf("Filter applied: %s", m.filterValue)
-					return m, nil
+					m = m.ToggleFilterHighlight().ClearCurrentKeyIdx().ClearKeyHistory().ClearRedisCursor()
+					return m, cmd.GetKeys(m.ctx, m.redis, m.redisCursor, m.filterValue) // Re-fetch keys with the filter applied
 				}
 				// Handle filter input
 				m = m.appendCharToFilterValue(key)
@@ -138,7 +138,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 				if m.HasMoreKeysOnServer() {
 					log.Print("Fetching a next key list from server")
-					return m, cmd.GetKeys(m.ctx, m.redis, m.redisCursor) // Fetch keys for the new tab
+					return m, cmd.GetKeys(m.ctx, m.redis, m.redisCursor, m.filterValue) // Fetch keys for the new tab
 				}
 				log.Print("No more keys to fetch")
 				return m, nil
@@ -204,7 +204,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case cmd.NewRedisClientMsg:
 			log.Print("Received new Redis client message")
 			m = m.UpdateRedisClient(msg).ClearCurrentKeyIdx().ClearKeyHistory().ClearRedisCursor()
-			return m, cmd.GetKeys(m.ctx, m.redis, m.redisCursor)
+			return m, cmd.GetKeys(m.ctx, m.redis, m.redisCursor, m.filterValue)
 		}
 
 	}
