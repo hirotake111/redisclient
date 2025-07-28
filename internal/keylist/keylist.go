@@ -26,6 +26,7 @@ func Render(
 	page int,
 	cursor int,
 	filterForm *textarea.Model,
+	updateForm *textarea.Model,
 ) string {
 	// Calculate widths
 	widthKeyListView := width / 3
@@ -53,8 +54,8 @@ func Render(
 	header := component.Header(host)
 
 	var form string
-	if valueFormActive {
-		form = component.Form("New Value", updateFormValue, true, width)
+	if updateForm.Focused() {
+		form = updateForm.View()
 	} else {
 		form = filterForm.View()
 	}

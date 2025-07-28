@@ -55,8 +55,9 @@ type Model struct {
 	keys          [][]string // History of keys fetched
 	keyHistoryIdx int        // Current index in the key history
 
-	valueFormActive bool   // Indicates if the new value form is active
-	formValue       string // Value for the form in update state
+	valueFormActive bool            // Indicates if the new value form is active
+	formValue       string          // Value for the form in update state
+	updateForm      *textarea.Model // Model for the update value form
 
 	tabs       int // Number of tabs
 	currentTab int // Current tab index
@@ -74,31 +75,22 @@ type Model struct {
 }
 
 func NewModel(ctx context.Context, redis *redis.Client) Model {
-	ff := textarea.New()
-	ff.Placeholder = "Filter keys..."
-	ff.Prompt = "FILTER: "
-	ff.SetHeight(1)
-	ff.CharLimit = 100
-	ff.KeyMap.InsertNewline.SetEnabled(false) // Disable newline insertion
-	ff.BlurredStyle.Base = ff.BlurredStyle.Base.Border(lipgloss.RoundedBorder()).BorderForeground(gray)
-	ff.FocusedStyle.Base = ff.FocusedStyle.Base.Border(lipgloss.RoundedBorder()).BorderForeground(blue)
-	ff.ShowLineNumbers = false
-	ff.Blur()
+	ff := newFilterForm()
+	uf := newUpdateForm()
 
 	return Model{
-		ctx:               ctx,
-		tabs:              tabSize,
-		currentTab:        0,
-		state:             ListState,
-		redis:             redis,
-		width:             80, // Default width
-		height:            24, // Default height
-		currentKeyIdx:     0,
-		keys:              [][]string{},
-		keyHistoryIdx:     0,
-		filterHighlighted: false,
-		filterValue:       "",
-		filterForm:        &ff,
+		ctx:           ctx,
+		tabs:          tabSize,
+		currentTab:    0,
+		state:         ListState,
+		redis:         redis,
+		width:         80, // Default width
+		height:        24, // Default height
+		currentKeyIdx: 0,
+		keys:          [][]string{},
+		keyHistoryIdx: 0,
+		filterForm:    ff,
+		updateForm:    uf,
 	}
 }
 
@@ -204,20 +196,6 @@ func (m Model) HasPreviousKeys() bool {
 	return m.keyHistoryIdx > 0
 }
 
-func (m Model) appendCharToFilterValue(key string) Model {
-	m.filterValue += key
-	log.Printf("Current filter value: %s", m.filterValue)
-	return m
-}
-
-func (m Model) removeCharFromFilterValue() Model {
-	if len(m.filterValue) > 0 {
-		m.filterValue = m.filterValue[:len(m.filterValue)-1]
-	}
-	log.Printf("Current filter value: %s", m.filterValue)
-	return m
-}
-
 func (m Model) ClarFilterValue() Model {
 	m.filterValue = ""
 	log.Print("Clearing filter value")
@@ -289,19 +267,6 @@ func (m Model) toHelpWindowState() Model {
 	return m
 }
 
-func (m Model) toggleUpdateValueForm() Model {
-	log.Print("Activating update value form")
-	m.valueFormActive = !m.valueFormActive
-	m.formValue = ""
-	return m
-}
-
-func (m Model) appendCharToFormValue(key string) Model {
-	log.Print("Appending character to form value")
-	m.formValue += key
-	return m
-}
-
 func (m Model) removeCharFromFormValue() Model {
 	if len(m.formValue) > 0 {
 		m.formValue = m.formValue[:len(m.formValue)-1]
@@ -328,4 +293,32 @@ func (m Model) ClearErrorMessage() Model {
 	log.Print("Clearing error message")
 	m.errorMsg = ""
 	return m
+}
+
+func newFilterForm() *textarea.Model {
+	ff := textarea.New()
+	ff.Placeholder = "Filter keys..."
+	ff.Prompt = "FILTER: "
+	ff.SetHeight(1)
+	ff.CharLimit = 100
+	ff.KeyMap.InsertNewline.SetEnabled(false) // Disable newline insertion
+	ff.BlurredStyle.Base = ff.BlurredStyle.Base.Border(lipgloss.RoundedBorder()).BorderForeground(gray)
+	ff.FocusedStyle.Base = ff.FocusedStyle.Base.Border(lipgloss.RoundedBorder()).BorderForeground(blue)
+	ff.ShowLineNumbers = false
+	ff.Blur()
+	return &ff
+}
+
+func newUpdateForm() *textarea.Model {
+	ff := textarea.New()
+	ff.Placeholder = "Enter new value..."
+	ff.Prompt = "NEW VALUE: "
+	ff.SetHeight(1)
+	ff.CharLimit = 100
+	ff.KeyMap.InsertNewline.SetEnabled(false) // Disable newline insertion
+	ff.BlurredStyle.Base = ff.BlurredStyle.Base.Border(lipgloss.RoundedBorder()).BorderForeground(gray)
+	ff.FocusedStyle.Base = ff.FocusedStyle.Base.Border(lipgloss.RoundedBorder()).BorderForeground(blue)
+	ff.ShowLineNumbers = false
+	ff.Blur()
+	return &ff
 }
