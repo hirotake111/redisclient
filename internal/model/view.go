@@ -19,13 +19,11 @@ func (m Model) View() string {
 			m.currentKeyIdx,
 			m.value,
 			m.HostName(),
-			m.filterHighlighted,
-			m.filterValue,
-			m.valueFormActive,
-			m.formValue,
 			m.errorMsg,
 			m.keyHistoryIdx,
 			int(m.redisCursor),
+			m.filterForm,
+			m.updateForm,
 		)
 
 	case HelpWindowState:

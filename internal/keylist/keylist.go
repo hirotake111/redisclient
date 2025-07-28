@@ -3,6 +3,7 @@ package keylist
 import (
 	"fmt"
 
+	"github.com/charmbracelet/bubbles/textarea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/hirotake111/redisclient/internal/component"
 	"github.com/hirotake111/redisclient/internal/values"
@@ -17,13 +18,11 @@ func Render(
 	currentKeyIdx int,
 	value values.Value,
 	host string,
-	filterHihghlighted bool,
-	filterValue string,
-	valueFormActive bool,
-	updateFormValue string,
 	errorMsg string,
 	page int,
 	cursor int,
+	filterForm *textarea.Model,
+	updateForm *textarea.Model,
 ) string {
 	// Calculate widths
 	widthKeyListView := width / 3
@@ -37,7 +36,7 @@ func Render(
 	keyListTitle := component.TitleBarStyle.
 		Width(widthKeyListView).
 		Render(fmt.Sprintf("Keys (page: %d, cursor: %d)", page, cursor))
-	keyList := component.KeyList(keys, currentKeyIdx, heightLeftPane, widthKeyListView, !filterHihghlighted && !valueFormActive)
+	keyList := component.KeyList(keys, currentKeyIdx, heightLeftPane, widthKeyListView, !(filterForm.Focused() || updateForm.Focused()))
 	keyListGroup := lipgloss.JoinVertical(lipgloss.Top, keyListTitle, keyList)
 
 	valueDisplayGroup := lipgloss.JoinVertical(lipgloss.Top,
@@ -51,10 +50,10 @@ func Render(
 	header := component.Header(host)
 
 	var form string
-	if valueFormActive {
-		form = component.Form("New Value", updateFormValue, true, width)
+	if updateForm.Focused() {
+		form = updateForm.View()
 	} else {
-		form = component.Form("Filter", filterValue, filterHihghlighted, width)
+		form = filterForm.View()
 	}
 
 	app := lipgloss.JoinVertical(lipgloss.Left,

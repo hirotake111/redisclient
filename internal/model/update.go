@@ -10,7 +10,7 @@ import (
 
 func (m Model) Init() tea.Cmd {
 	log.Print("Initializing model...")
-	return cmd.GetKeys(m.ctx, m.redis, m.redisCursor, m.filterValue)
+	return cmd.GetKeys(m.ctx, m.redis, m.redisCursor, m.filterForm.Value())
 }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -48,57 +48,57 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	// END OF UPDATE VALUE STATE
 
 	case ListState:
-		if m.valueFormActive {
+		if m.updateForm.Focused() {
 			//
 			// UPDATE VALUE FORM ACTIVATED
 			//
+			log.Print("UPDATE VALUE FORM ACTIVATED")
 			switch msg := msg.(type) {
 			case tea.KeyMsg:
 				key := msg.String()
 				if key == tea.KeyEsc.String() || key == tea.KeyCtrlC.String() {
 					log.Print("Exiting update value form")
-					return m.toggleUpdateValueForm(), nil
+					m.updateForm.Blur()
+					return m, nil
 				}
 				if key == tea.KeyEnter.String() {
 					log.Printf("Updating value for key: %s", m.currentKey())
-					return m.toggleUpdateValueForm(), cmd.UpdateValue(m.ctx, m.redis, m.currentKey(), m.formValue)
-				}
-				if key == tea.KeyBackspace.String() {
-					m = m.removeCharFromFormValue()
-					return m, nil
+					m.updateForm.Blur()
+					return m, cmd.UpdateValue(m.ctx, m.redis, m.currentKey(), m.updateForm.Value())
 				}
 				// Handle form input
-				log.Printf("Appending character '%s' to form value", key)
-				m = m.appendCharToFormValue(key)
-				return m, nil
+				log.Printf("Appending character \"%s\" to update form value for key \"%s\"", msg, m.currentKey())
+				newForm, cmd := m.updateForm.Update(msg)
+				m.updateForm = &newForm
+				return m, cmd
 			}
 			return m, nil
 
 		}
-		if m.filterHighlighted {
+		if m.filterForm.Focused() {
 			//
 			// FILTER MODE ACTIVATED
 			//
+			log.Print("FILTER MODE ACTIVATED")
 			switch msg := msg.(type) {
 			case tea.KeyMsg:
 				key := msg.String()
 				if key == tea.KeyEsc.String() || key == tea.KeyCtrlC.String() {
 					log.Print("Exiting filter mode")
-					m = m.ToggleFilterHighlight()
-					return m, nil
-				}
-				if key == tea.KeyBackspace.String() {
-					m = m.removeCharFromFilterValue()
+					m.filterForm.Blur()
 					return m, nil
 				}
 				if key == tea.KeyEnter.String() {
-					log.Printf("Filter applied: %s", m.filterValue)
-					m = m.ToggleFilterHighlight().ClearCurrentKeyIdx().ClearKeyHistory().ClearRedisCursor()
-					return m, cmd.GetKeys(m.ctx, m.redis, m.redisCursor, m.filterValue) // Re-fetch keys with the filter applied
+					log.Printf("Applyig filter keyword: \"%s\"", m.filterForm.Value())
+					m.filterForm.Blur()
+					m = m.ClearCurrentKeyIdx().ClearKeyHistory().ClearRedisCursor()
+					return m, cmd.GetKeys(m.ctx, m.redis, m.redisCursor, m.filterForm.Value()) // Re-fetch keys with the filter applied
 				}
 				// Handle filter input
-				m = m.appendCharToFilterValue(key)
-				return m, nil
+				log.Printf("Appending character '%s' to form value", key)
+				newForm, cmd := m.filterForm.Update(msg)
+				m.filterForm = &newForm
+				return m, cmd
 			}
 		}
 
@@ -120,14 +120,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, cmd.GetValue(m.ctx, m.redis, m.currentKey())
 			}
 			if key == tea.KeyEnter.String() {
-				log.Print("Enter key pressed, activate value update form")
-				return m.toggleUpdateValueForm(), nil
+				log.Print("Actrivating update value form")
+				return m, m.updateForm.Focus()
 			}
 			if key == "/" {
-				log.Print("Filter mode activated")
-				m = m.ToggleFilterHighlight()
-				m = m.ClarFilterValue()
-				return m, nil
+				log.Print("Activating filter mode")
+				return m, m.filterForm.Focus()
 			}
 			if key == "n" {
 				log.Print("key 'n' pressed, moving to next key list")
@@ -138,7 +136,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 				if m.HasMoreKeysOnServer() {
 					log.Print("Fetching a next key list from server")
-					return m, cmd.GetKeys(m.ctx, m.redis, m.redisCursor, m.filterValue) // Fetch keys for the new tab
+					return m, cmd.GetKeys(m.ctx, m.redis, m.redisCursor, m.filterForm.Value()) // Fetch keys for the new tab
 				}
 				log.Print("No more keys to fetch")
 				return m, nil
@@ -204,7 +202,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case cmd.NewRedisClientMsg:
 			log.Print("Received new Redis client message")
 			m = m.UpdateRedisClient(msg).ClearCurrentKeyIdx().ClearKeyHistory().ClearRedisCursor()
-			return m, cmd.GetKeys(m.ctx, m.redis, m.redisCursor, m.filterValue)
+			return m, cmd.GetKeys(m.ctx, m.redis, m.redisCursor, m.filterForm.Value()) // Re-fetch keys with the new client
 		}
 
 	}

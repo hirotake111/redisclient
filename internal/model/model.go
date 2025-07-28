@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/charmbracelet/bubbles/textarea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/hirotake111/redisclient/internal/cmd"
 	"github.com/hirotake111/redisclient/internal/values"
@@ -49,13 +50,12 @@ type Model struct {
 	ctx      context.Context // Context for app
 	errorMsg string          // Indicates if the app is quitting
 
-	currentKeyIdx int        // Current key index in the list
-	redisCursor   uint64     // Cursor position in the database
-	keys          [][]string // History of keys fetched
-	keyHistoryIdx int        // Current index in the key history
-
-	valueFormActive bool   // Indicates if the new value form is active
-	formValue       string // Value for the form in update state
+	currentKeyIdx int             // Current key index in the list
+	redisCursor   uint64          // Cursor position in the database
+	keys          [][]string      // History of keys fetched
+	keyHistoryIdx int             // Current index in the key history
+	updateForm    *textarea.Model // Model for the update value form
+	filterForm    *textarea.Model // Model for the filter form
 
 	tabs       int // Number of tabs
 	currentTab int // Current tab index
@@ -67,24 +67,25 @@ type Model struct {
 	redis *redis.Client // Redis client instance
 	value values.Value  // Stores the value for the current key
 
-	filterHighlighted bool   // Indicates if the filter form is highlighted
-	filterValue       string // Stores the value for the filter form
 }
 
 func NewModel(ctx context.Context, redis *redis.Client) Model {
+	ff := newCustomForm("FILTER: ", "Filter keys...")
+	uf := newCustomForm("NEW VALUE: ", "Enter new value...")
+
 	return Model{
-		ctx:               ctx,
-		tabs:              tabSize,
-		currentTab:        0,
-		state:             ListState,
-		redis:             redis,
-		width:             80, // Default width
-		height:            24, // Default height
-		currentKeyIdx:     0,
-		keys:              [][]string{},
-		keyHistoryIdx:     0,
-		filterHighlighted: false,
-		filterValue:       "",
+		ctx:           ctx,
+		tabs:          tabSize,
+		currentTab:    0,
+		state:         ListState,
+		redis:         redis,
+		width:         80, // Default width
+		height:        24, // Default height
+		currentKeyIdx: 0,
+		keys:          [][]string{},
+		keyHistoryIdx: 0,
+		filterForm:    ff,
+		updateForm:    uf,
 	}
 }
 
@@ -178,12 +179,6 @@ func (m Model) MoveCursorUp() Model {
 	return m
 }
 
-func (m Model) ToggleFilterHighlight() Model {
-	m.filterHighlighted = !m.filterHighlighted
-	log.Printf("Filter form highlight: %t", m.filterHighlighted)
-	return m
-}
-
 func (m Model) HasNextHistory() bool {
 	return m.keyHistoryIdx < len(m.keys)-1
 }
@@ -194,26 +189,6 @@ func (m Model) HasMoreKeysOnServer() bool {
 
 func (m Model) HasPreviousKeys() bool {
 	return m.keyHistoryIdx > 0
-}
-
-func (m Model) appendCharToFilterValue(key string) Model {
-	m.filterValue += key
-	log.Printf("Current filter value: %s", m.filterValue)
-	return m
-}
-
-func (m Model) removeCharFromFilterValue() Model {
-	if len(m.filterValue) > 0 {
-		m.filterValue = m.filterValue[:len(m.filterValue)-1]
-	}
-	log.Printf("Current filter value: %s", m.filterValue)
-	return m
-}
-
-func (m Model) ClarFilterValue() Model {
-	m.filterValue = ""
-	log.Print("Clearing filter value")
-	return m
 }
 
 func (m Model) currentKey() string {
@@ -281,29 +256,6 @@ func (m Model) toHelpWindowState() Model {
 	return m
 }
 
-func (m Model) toggleUpdateValueForm() Model {
-	log.Print("Activating update value form")
-	m.valueFormActive = !m.valueFormActive
-	m.formValue = ""
-	return m
-}
-
-func (m Model) appendCharToFormValue(key string) Model {
-	log.Print("Appending character to form value")
-	m.formValue += key
-	return m
-}
-
-func (m Model) removeCharFromFormValue() Model {
-	if len(m.formValue) > 0 {
-		m.formValue = m.formValue[:len(m.formValue)-1]
-		log.Printf("Removed last character from form value: %s", m.formValue)
-	} else {
-		log.Print("Form value is already empty")
-	}
-	return m
-}
-
 func (m Model) EmptyValue() Model {
 	log.Print("Clearing value")
 	m.value = values.Value{}
@@ -320,4 +272,19 @@ func (m Model) ClearErrorMessage() Model {
 	log.Print("Clearing error message")
 	m.errorMsg = ""
 	return m
+}
+
+func newCustomForm(prompt, placeholder string) *textarea.Model {
+	ff := textarea.New()
+	ff.Prompt = prompt
+	ff.Placeholder = placeholder
+	ff.SetHeight(1)
+	ff.SetWidth(100)
+	ff.CharLimit = 100
+	ff.KeyMap.InsertNewline.SetEnabled(false) // Disable newline insertion
+	ff.BlurredStyle.Base = ff.BlurredStyle.Base.Border(lipgloss.RoundedBorder()).BorderForeground(gray)
+	ff.FocusedStyle.Base = ff.FocusedStyle.Base.Border(lipgloss.RoundedBorder()).BorderForeground(blue)
+	ff.ShowLineNumbers = false
+	ff.Blur()
+	return &ff
 }
