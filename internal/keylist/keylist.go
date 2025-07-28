@@ -18,10 +18,6 @@ func Render(
 	currentKeyIdx int,
 	value values.Value,
 	host string,
-	filterHihghlighted bool,
-	filterValue string,
-	valueFormActive bool,
-	updateFormValue string,
 	errorMsg string,
 	page int,
 	cursor int,
@@ -40,7 +36,7 @@ func Render(
 	keyListTitle := component.TitleBarStyle.
 		Width(widthKeyListView).
 		Render(fmt.Sprintf("Keys (page: %d, cursor: %d)", page, cursor))
-	keyList := component.KeyList(keys, currentKeyIdx, heightLeftPane, widthKeyListView, !filterHihghlighted && !valueFormActive)
+	keyList := component.KeyList(keys, currentKeyIdx, heightLeftPane, widthKeyListView, !(filterForm.Focused() || updateForm.Focused()))
 	keyListGroup := lipgloss.JoinVertical(lipgloss.Top, keyListTitle, keyList)
 
 	valueDisplayGroup := lipgloss.JoinVertical(lipgloss.Top,

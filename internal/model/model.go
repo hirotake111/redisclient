@@ -50,14 +50,12 @@ type Model struct {
 	ctx      context.Context // Context for app
 	errorMsg string          // Indicates if the app is quitting
 
-	currentKeyIdx int        // Current key index in the list
-	redisCursor   uint64     // Cursor position in the database
-	keys          [][]string // History of keys fetched
-	keyHistoryIdx int        // Current index in the key history
-
-	valueFormActive bool            // Indicates if the new value form is active
-	formValue       string          // Value for the form in update state
-	updateForm      *textarea.Model // Model for the update value form
+	currentKeyIdx int             // Current key index in the list
+	redisCursor   uint64          // Cursor position in the database
+	keys          [][]string      // History of keys fetched
+	keyHistoryIdx int             // Current index in the key history
+	updateForm    *textarea.Model // Model for the update value form
+	filterForm    *textarea.Model // Model for the filter form
 
 	tabs       int // Number of tabs
 	currentTab int // Current tab index
@@ -69,14 +67,11 @@ type Model struct {
 	redis *redis.Client // Redis client instance
 	value values.Value  // Stores the value for the current key
 
-	filterHighlighted bool            // Indicates if the filter form is highlighted
-	filterValue       string          // Stores the value for the filter form
-	filterForm        *textarea.Model // Model for the filter form
 }
 
 func NewModel(ctx context.Context, redis *redis.Client) Model {
-	ff := newFilterForm()
-	uf := newUpdateForm()
+	ff := newCustomForm("FILTER: ", "Filter keys...")
+	uf := newCustomForm("NEW VALUE: ", "Enter new value...")
 
 	return Model{
 		ctx:           ctx,
@@ -196,12 +191,6 @@ func (m Model) HasPreviousKeys() bool {
 	return m.keyHistoryIdx > 0
 }
 
-func (m Model) ClarFilterValue() Model {
-	m.filterValue = ""
-	log.Print("Clearing filter value")
-	return m
-}
-
 func (m Model) currentKey() string {
 	if m.currentKeyIdx < 0 || m.currentKeyIdx >= len(m.CurrentKeyList()) {
 		return ""
@@ -267,16 +256,6 @@ func (m Model) toHelpWindowState() Model {
 	return m
 }
 
-func (m Model) removeCharFromFormValue() Model {
-	if len(m.formValue) > 0 {
-		m.formValue = m.formValue[:len(m.formValue)-1]
-		log.Printf("Removed last character from form value: %s", m.formValue)
-	} else {
-		log.Print("Form value is already empty")
-	}
-	return m
-}
-
 func (m Model) EmptyValue() Model {
 	log.Print("Clearing value")
 	m.value = values.Value{}
@@ -295,25 +274,12 @@ func (m Model) ClearErrorMessage() Model {
 	return m
 }
 
-func newFilterForm() *textarea.Model {
+func newCustomForm(prompt, placeholder string) *textarea.Model {
 	ff := textarea.New()
-	ff.Placeholder = "Filter keys..."
-	ff.Prompt = "FILTER: "
+	ff.Prompt = prompt
+	ff.Placeholder = placeholder
 	ff.SetHeight(1)
-	ff.CharLimit = 100
-	ff.KeyMap.InsertNewline.SetEnabled(false) // Disable newline insertion
-	ff.BlurredStyle.Base = ff.BlurredStyle.Base.Border(lipgloss.RoundedBorder()).BorderForeground(gray)
-	ff.FocusedStyle.Base = ff.FocusedStyle.Base.Border(lipgloss.RoundedBorder()).BorderForeground(blue)
-	ff.ShowLineNumbers = false
-	ff.Blur()
-	return &ff
-}
-
-func newUpdateForm() *textarea.Model {
-	ff := textarea.New()
-	ff.Placeholder = "Enter new value..."
-	ff.Prompt = "NEW VALUE: "
-	ff.SetHeight(1)
+	ff.SetWidth(100)
 	ff.CharLimit = 100
 	ff.KeyMap.InsertNewline.SetEnabled(false) // Disable newline insertion
 	ff.BlurredStyle.Base = ff.BlurredStyle.Base.Border(lipgloss.RoundedBorder()).BorderForeground(gray)
