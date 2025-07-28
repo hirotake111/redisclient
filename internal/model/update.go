@@ -75,30 +75,30 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 
 		}
-		if m.filterHighlighted {
+		if m.filterForm.Focused() {
 			//
 			// FILTER MODE ACTIVATED
 			//
+			log.Print("FILTER MODE ACTIVATED")
 			switch msg := msg.(type) {
 			case tea.KeyMsg:
 				key := msg.String()
 				if key == tea.KeyEsc.String() || key == tea.KeyCtrlC.String() {
 					log.Print("Exiting filter mode")
-					m = m.ToggleFilterHighlight()
-					return m, nil
-				}
-				if key == tea.KeyBackspace.String() {
-					m = m.removeCharFromFilterValue()
+					m.filterForm.Blur()
 					return m, nil
 				}
 				if key == tea.KeyEnter.String() {
-					log.Printf("Filter applied: %s", m.filterValue)
-					m = m.ToggleFilterHighlight().ClearCurrentKeyIdx().ClearKeyHistory().ClearRedisCursor()
-					return m, cmd.GetKeys(m.ctx, m.redis, m.redisCursor, m.filterValue) // Re-fetch keys with the filter applied
+					log.Printf("Applyig filter keyword: \"%s\"", m.filterForm.Value())
+					m.filterForm.Blur()
+					m = m.ClearCurrentKeyIdx().ClearKeyHistory().ClearRedisCursor()
+					return m, cmd.GetKeys(m.ctx, m.redis, m.redisCursor, m.filterForm.Value()) // Re-fetch keys with the filter applied
 				}
 				// Handle filter input
-				m = m.appendCharToFilterValue(key)
-				return m, nil
+				log.Printf("Appending character '%s' to form value", key)
+				newForm, c := m.filterForm.Update(msg)
+				m.filterForm = &newForm
+				return m, c
 			}
 		}
 
@@ -125,9 +125,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			if key == "/" {
 				log.Print("Filter mode activated")
-				m = m.ToggleFilterHighlight()
-				m = m.ClarFilterValue()
-				return m, nil
+				// m = m.ToggleFilterHighlight().ClarFilterValue()
+				// m = m.ClarFilterValue()
+				if m.filterForm.Focused() {
+					m.filterForm.Blur()
+					return m, nil
+				}
+				return m, m.filterForm.Focus()
 			}
 			if key == "n" {
 				log.Print("key 'n' pressed, moving to next key list")

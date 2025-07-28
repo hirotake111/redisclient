@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/charmbracelet/bubbles/textarea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/hirotake111/redisclient/internal/cmd"
 	"github.com/hirotake111/redisclient/internal/values"
@@ -67,11 +68,23 @@ type Model struct {
 	redis *redis.Client // Redis client instance
 	value values.Value  // Stores the value for the current key
 
-	filterHighlighted bool   // Indicates if the filter form is highlighted
-	filterValue       string // Stores the value for the filter form
+	filterHighlighted bool            // Indicates if the filter form is highlighted
+	filterValue       string          // Stores the value for the filter form
+	filterForm        *textarea.Model // Model for the filter form
 }
 
 func NewModel(ctx context.Context, redis *redis.Client) Model {
+	ff := textarea.New()
+	ff.Placeholder = "Filter keys..."
+	ff.Prompt = "FILTER: "
+	ff.SetHeight(1)
+	ff.CharLimit = 100
+	ff.KeyMap.InsertNewline.SetEnabled(false) // Disable newline insertion
+	ff.BlurredStyle.Base = ff.BlurredStyle.Base.Border(lipgloss.RoundedBorder()).BorderForeground(gray)
+	ff.FocusedStyle.Base = ff.FocusedStyle.Base.Border(lipgloss.RoundedBorder()).BorderForeground(blue)
+	ff.ShowLineNumbers = false
+	ff.Blur()
+
 	return Model{
 		ctx:               ctx,
 		tabs:              tabSize,
@@ -85,6 +98,7 @@ func NewModel(ctx context.Context, redis *redis.Client) Model {
 		keyHistoryIdx:     0,
 		filterHighlighted: false,
 		filterValue:       "",
+		filterForm:        &ff,
 	}
 }
 
@@ -175,12 +189,6 @@ func (m Model) MoveCursorDown() Model {
 
 func (m Model) MoveCursorUp() Model {
 	m.currentKeyIdx = max(m.currentKeyIdx-1, 0)
-	return m
-}
-
-func (m Model) ToggleFilterHighlight() Model {
-	m.filterHighlighted = !m.filterHighlighted
-	log.Printf("Filter form highlight: %t", m.filterHighlighted)
 	return m
 }
 

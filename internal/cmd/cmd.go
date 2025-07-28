@@ -83,7 +83,6 @@ func GetValue(ctx context.Context, redis *redis.Client, key string) tea.Cmd {
 
 func escapeCharacter(value string) string {
 	runes := make([]rune, 0, len(value))
-	log.Printf("before: %s", value)
 	for _, r := range value {
 		if r < 32 {
 			// Replace non-ASCII characters with a tofu
@@ -92,7 +91,6 @@ func escapeCharacter(value string) string {
 			runes = append(runes, r)
 		}
 	}
-	log.Printf("after: %s", string(runes))
 	return string(runes)
 }
 

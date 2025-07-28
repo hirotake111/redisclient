@@ -3,6 +3,7 @@ package keylist
 import (
 	"fmt"
 
+	"github.com/charmbracelet/bubbles/textarea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/hirotake111/redisclient/internal/component"
 	"github.com/hirotake111/redisclient/internal/values"
@@ -24,6 +25,7 @@ func Render(
 	errorMsg string,
 	page int,
 	cursor int,
+	filterForm *textarea.Model,
 ) string {
 	// Calculate widths
 	widthKeyListView := width / 3
@@ -54,7 +56,7 @@ func Render(
 	if valueFormActive {
 		form = component.Form("New Value", updateFormValue, true, width)
 	} else {
-		form = component.Form("Filter", filterValue, filterHihghlighted, width)
+		form = filterForm.View()
 	}
 
 	app := lipgloss.JoinVertical(lipgloss.Left,

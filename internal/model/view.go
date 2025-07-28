@@ -26,6 +26,7 @@ func (m Model) View() string {
 			m.errorMsg,
 			m.keyHistoryIdx,
 			int(m.redisCursor),
+			m.filterForm,
 		)
 
 	case HelpWindowState:
