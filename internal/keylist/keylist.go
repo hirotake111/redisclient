@@ -3,28 +3,19 @@ package keylist
 import (
 	"fmt"
 
-	"github.com/charmbracelet/bubbles/textarea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/hirotake111/redisclient/internal/component"
-	"github.com/hirotake111/redisclient/internal/values"
+	"github.com/hirotake111/redisclient/internal/mode"
 )
 
 func Render(
+	mode *mode.ListMode,
 	width int,
 	height int,
-	tabs int,
-	currentTab int,
 	keys []string,
-	currentKeyIdx int,
-	value values.Value,
 	host string,
-	errorMsg string,
-	page int,
-	cursor int,
-	filterForm *textarea.Model,
-	updateForm *textarea.Model,
 ) string {
-	// Calculate widths
+	// Calculate widths and heights
 	widthKeyListView := width / 3
 	heightLeftPane := height - 10  // Adjust for header and footer
 	heightRightPane := height - 10 // Adjust for header and footer
@@ -32,28 +23,28 @@ func Render(
 	heightErrorBox := 3                            // Space for error messages
 	widthRightPane := width - widthKeyListView - 5 // Adjust for padding and borders
 
-	tabRow := component.TabRow(tabs, currentTab)
+	tabRow := component.TabRow(mode.Tabs, mode.CurrentTab)
 	keyListTitle := component.TitleBarStyle.
 		Width(widthKeyListView).
-		Render(fmt.Sprintf("Keys (page: %d, cursor: %d)", page, cursor))
-	keyList := component.KeyList(keys, currentKeyIdx, heightLeftPane, widthKeyListView, !(filterForm.Focused() || updateForm.Focused()))
+		Render(fmt.Sprintf("Keys (page: %d, cursor: %d)", mode.KeyHistoryIdx, mode.RedisCursor))
+	keyList := component.KeyList(keys, mode.CurrentKeyIdx, heightLeftPane, widthKeyListView, !(mode.FilterForm.Focused() || mode.UpdateForm.Focused()))
 	keyListGroup := lipgloss.JoinVertical(lipgloss.Top, keyListTitle, keyList)
 
 	valueDisplayGroup := lipgloss.JoinVertical(lipgloss.Top,
 		lipgloss.JoinHorizontal(lipgloss.Left,
 			component.TitleBarStyle.Render("Value"),
-			component.TTLIndicator(value.TTL()),
+			component.TTLIndicator(mode.Value.TTL()),
 		),
-		component.ValueDisplay(value.Data(), widthRightPane, heightValueDisplay),
-		component.ErrorBox(errorMsg, widthRightPane, heightErrorBox),
+		component.ValueDisplay(mode.Value.Data(), widthRightPane, heightValueDisplay),
+		component.ErrorBox(mode.ErrorMsg, widthRightPane, heightErrorBox),
 	)
 	header := component.Header(host)
 
 	var form string
-	if updateForm.Focused() {
-		form = updateForm.View()
+	if mode.UpdateForm.Focused() {
+		form = mode.UpdateForm.View()
 	} else {
-		form = filterForm.View()
+		form = mode.FilterForm.View()
 	}
 
 	app := lipgloss.JoinVertical(lipgloss.Left,

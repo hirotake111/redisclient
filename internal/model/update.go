@@ -10,7 +10,7 @@ import (
 
 func (m Model) Init() tea.Cmd {
 	log.Print("Initializing model...")
-	return cmd.GetKeys(m.ctx, m.redis, m.redisCursor, m.filterForm.Value())
+	return cmd.GetKeys(m.ctx, m.redis, m.mode.RedisCursor, m.mode.FilterForm.Value())
 }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -32,7 +32,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil // No action for other timeout kinds
 	}
 
-	switch m.state {
+	switch m.State {
 	case HelpWindowState:
 		switch msg := msg.(type) {
 		case tea.KeyMsg:
@@ -48,7 +48,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	// END OF UPDATE VALUE STATE
 
 	case ListState:
-		if m.updateForm.Focused() {
+		if m.mode.UpdateForm.Focused() {
 			//
 			// UPDATE VALUE FORM ACTIVATED
 			//
@@ -58,24 +58,24 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				key := msg.String()
 				if key == tea.KeyEsc.String() || key == tea.KeyCtrlC.String() {
 					log.Print("Exiting update value form")
-					m.updateForm.Blur()
+					m.mode.UpdateForm.Blur()
 					return m, nil
 				}
 				if key == tea.KeyEnter.String() {
 					log.Printf("Updating value for key: %s", m.currentKey())
-					m.updateForm.Blur()
-					return m, cmd.UpdateValue(m.ctx, m.redis, m.currentKey(), m.updateForm.Value())
+					m.mode.UpdateForm.Blur()
+					return m, cmd.UpdateValue(m.ctx, m.redis, m.currentKey(), m.mode.UpdateForm.Value())
 				}
 				// Handle form input
 				log.Printf("Appending character \"%s\" to update form value for key \"%s\"", msg, m.currentKey())
-				newForm, cmd := m.updateForm.Update(msg)
-				m.updateForm = &newForm
+				newForm, cmd := m.mode.UpdateForm.Update(msg)
+				m.mode.UpdateForm = &newForm
 				return m, cmd
 			}
 			return m, nil
 
 		}
-		if m.filterForm.Focused() {
+		if m.mode.FilterForm.Focused() {
 			//
 			// FILTER MODE ACTIVATED
 			//
@@ -85,19 +85,19 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				key := msg.String()
 				if key == tea.KeyEsc.String() || key == tea.KeyCtrlC.String() {
 					log.Print("Exiting filter mode")
-					m.filterForm.Blur()
+					m.mode.FilterForm.Blur()
 					return m, nil
 				}
 				if key == tea.KeyEnter.String() {
-					log.Printf("Applyig filter keyword: \"%s\"", m.filterForm.Value())
-					m.filterForm.Blur()
+					log.Printf("Applyig filter keyword: \"%s\"", m.mode.FilterForm.Value())
+					m.mode.FilterForm.Blur()
 					m = m.ClearCurrentKeyIdx().ClearKeyHistory().ClearRedisCursor()
-					return m, cmd.GetKeys(m.ctx, m.redis, m.redisCursor, m.filterForm.Value()) // Re-fetch keys with the filter applied
+					return m, cmd.GetKeys(m.ctx, m.redis, m.mode.RedisCursor, m.mode.FilterForm.Value()) // Re-fetch keys with the filter applied
 				}
 				// Handle filter input
 				log.Printf("Appending character '%s' to form value", key)
-				newForm, cmd := m.filterForm.Update(msg)
-				m.filterForm = &newForm
+				newForm, cmd := m.mode.FilterForm.Update(msg)
+				m.mode.FilterForm = &newForm
 				return m, cmd
 			}
 		}
@@ -121,11 +121,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			if key == tea.KeyEnter.String() {
 				log.Print("Actrivating update value form")
-				return m, m.updateForm.Focus()
+				return m, m.mode.UpdateForm.Focus()
 			}
 			if key == "/" {
 				log.Print("Activating filter mode")
-				return m, m.filterForm.Focus()
+				return m, m.mode.FilterForm.Focus()
 			}
 			if key == "n" {
 				log.Print("key 'n' pressed, moving to next key list")
@@ -136,7 +136,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 				if m.HasMoreKeysOnServer() {
 					log.Print("Fetching a next key list from server")
-					return m, cmd.GetKeys(m.ctx, m.redis, m.redisCursor, m.filterForm.Value()) // Fetch keys for the new tab
+					return m, cmd.GetKeys(m.ctx, m.redis, m.mode.RedisCursor, m.mode.FilterForm.Value()) // Fetch keys for the new tab
 				}
 				log.Print("No more keys to fetch")
 				return m, nil
@@ -152,19 +152,19 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, cmd.GetValue(m.ctx, m.redis, m.currentKey()) // Fetch value for the current key
 			}
 			if key == "y" {
-				if m.value.Data() == "" {
+				if m.mode.Value.Data() == "" {
 					return m, nil // No current key to copy
 				}
 				log.Print("key 'c' pressed, copying value of current key to clipboard")
-				return m, cmd.CopyValueToClipboard(m.ctx, m.value.Data())
+				return m, cmd.CopyValueToClipboard(m.ctx, m.mode.Value.Data())
 			}
 			if key == tea.KeyTab.String() {
 				m = m.NextTab()
-				return m, cmd.UpdateDatabase(m.ctx, m.redis, m.currentTab)
+				return m, cmd.UpdateDatabase(m.ctx, m.redis, m.mode.CurrentTab)
 			}
 			if key == tea.KeyShiftTab.String() {
 				m = m.PreviousTab()
-				return m, cmd.UpdateDatabase(m.ctx, m.redis, m.currentTab)
+				return m, cmd.UpdateDatabase(m.ctx, m.redis, m.mode.CurrentTab)
 			}
 			if key == "d" {
 				log.Print("key 'd' pressed, deleting current key")
@@ -202,7 +202,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case cmd.NewRedisClientMsg:
 			log.Print("Received new Redis client message")
 			m = m.UpdateRedisClient(msg).ClearCurrentKeyIdx().ClearKeyHistory().ClearRedisCursor()
-			return m, cmd.GetKeys(m.ctx, m.redis, m.redisCursor, m.filterForm.Value()) // Re-fetch keys with the new client
+			return m, cmd.GetKeys(m.ctx, m.redis, m.mode.RedisCursor, m.mode.FilterForm.Value()) // Re-fetch keys with the new client
 		}
 
 	}
