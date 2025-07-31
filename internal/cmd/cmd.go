@@ -61,6 +61,44 @@ func GetValue(ctx context.Context, redis *redis.Client, key string) tea.Cmd {
 			}
 			newValue = (string(bytes))
 
+		case "list":
+			list, err := redis.LRange(ctx, key, 0, -1).Result()
+			if err != nil {
+				return ErrMsg{Err: err}
+			}
+			bytes, err := json.Marshal(list)
+			if err != nil {
+				return ErrMsg{Err: err}
+			}
+			newValue = (string(bytes))
+
+		case "set":
+			members, err := redis.SMembers(ctx, key).Result()
+			if err != nil {
+				return ErrMsg{Err: err}
+			}
+			bytes, err := json.Marshal(members)
+			if err != nil {
+				return ErrMsg{Err: err}
+			}
+			newValue = (string(bytes))
+
+		case "zset":
+			zset, err := redis.ZRangeWithScores(ctx, key, 0, -1).Result()
+			if err != nil {
+				return ErrMsg{Err: err}
+			}
+			// Convert ZSet to a map for easier display
+			zsetMap := make(map[string]float64)
+			for _, z := range zset {
+				zsetMap[z.Member.(string)] = z.Score
+			}
+			bytes, err := json.Marshal(zsetMap)
+			if err != nil {
+				return ErrMsg{Err: err}
+			}
+			newValue = (string(bytes))
+
 		case "none": // Key does not exist
 			newValue = ""
 			return ErrMsg{Err: fmt.Errorf("key %s does not exist in the database", key)}
@@ -84,10 +122,7 @@ func GetValue(ctx context.Context, redis *redis.Client, key string) tea.Cmd {
 func escapeCharacter(value string) string {
 	runes := make([]rune, 0, len(value))
 	for _, r := range value {
-		if r < 32 {
-			// Replace non-ASCII characters with a tofu
-			runes = append(runes, '🫥')
-		} else {
+		if r >= 32 {
 			runes = append(runes, r)
 		}
 	}
