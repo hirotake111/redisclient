@@ -166,26 +166,9 @@ func ErrorBox(msg string, width, height int) string {
 }
 
 func HelpPane() string {
-	helpText := "j/k: Enter:update d:del /:filter n/p:next/prev q/Esc:quit ?:help"
+	helpText := "j/k: Enter:update d:del /:filter n/p:next/prev q/Esc:quit"
 	return lipgloss.NewStyle().
 		Padding(0, 1).
 		Foreground(gray).
-		Render(helpText)
-}
-
-func HelpWindow() string {
-	helpText := "Help:\n" +
-		"  - j/k (or arrow keys): navigate key list\n" +
-		"  - Enter: Update highlighted key\n" +
-		"  - d: Delete highlighted key\n" +
-		"  - /: Filter keys\n" +
-		"  - n: Next key list\n" +
-		"  - p: Previous key list\n" +
-		"  - q or Esc or Ctrl-c:  quit\n"
-
-	return lipgloss.NewStyle().
-		Padding(1).
-		BorderStyle(lipgloss.DoubleBorder()).
-		BorderForeground(gray).
 		Render(helpText)
 }

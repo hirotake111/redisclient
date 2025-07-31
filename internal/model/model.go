@@ -42,9 +42,8 @@ var (
 type State string
 
 const (
-	tabSize               = 16 // Default number of database indexes
-	ListState       State = "list"
-	HelpWindowState State = "help"
+	tabSize         = 16 // Default number of database indexes
+	ListState State = "list"
 )
 
 type Model struct {
@@ -239,12 +238,6 @@ func (m Model) DeleteKeyFromList(key string) Model {
 func (m Model) ToListState() Model {
 	log.Print("Switching to list state")
 	m.State = ListState
-	return m
-}
-
-func (m Model) toHelpWindowState() Model {
-	log.Print("Switching to help window state")
-	m.State = HelpWindowState
 	return m
 }
 

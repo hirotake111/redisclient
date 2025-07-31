@@ -33,18 +33,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	switch m.State {
-	case HelpWindowState:
-		switch msg := msg.(type) {
-		case tea.KeyMsg:
-			key := msg.String()
-			if key == tea.KeyCtrlC.String() {
-				log.Print("Exiting app...")
-				return m, tea.Quit
-			}
-			log.Print("Closing help window")
-			return m.ToListState(), nil
-		}
-
 	case ListState:
 		if m.mode.UpdateForm.Focused() {
 			//
@@ -166,10 +154,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			if key == "d" {
 				log.Print("key 'd' pressed, deleting current key")
-			}
-			if key == "?" {
-				log.Print("key '?' pressed, showing help")
-				return m.toHelpWindowState(), nil
 				currentKey := m.currentKey()
 				if currentKey == "" {
 					log.Print("No current key selected for deletion")

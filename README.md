@@ -23,7 +23,4 @@ go run ./cmd/tui
 
 ### TODOs
 
-- Bulk delete keys
-- Update readme and help window
-- Allow to type characters only in input field
 - Navigation with arrow keys on key list
