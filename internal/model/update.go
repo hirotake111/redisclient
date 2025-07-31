@@ -45,8 +45,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m.ToListState(), nil
 		}
 
-	// END OF UPDATE VALUE STATE
-
 	case ListState:
 		if m.mode.UpdateForm.Focused() {
 			//
@@ -168,6 +166,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			if key == "d" {
 				log.Print("key 'd' pressed, deleting current key")
+			}
+			if key == "?" {
+				log.Print("key '?' pressed, showing help")
+				return m.toHelpWindowState(), nil
 				currentKey := m.currentKey()
 				if currentKey == "" {
 					log.Print("No current key selected for deletion")
@@ -175,10 +177,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 				log.Printf("Deleting key: %s", currentKey)
 				return m, cmd.DeleteKey(m.ctx, m.redis, currentKey)
-			}
-			if key == "?" {
-				log.Print("key '?' pressed, showing help")
-				return m.toHelpWindowState(), nil
 			}
 
 		case cmd.ValueUpdatedMsg:

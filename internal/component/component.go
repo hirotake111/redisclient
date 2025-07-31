@@ -140,23 +140,6 @@ func KeyList(keys []string, cur, height, width int, highlighted bool) string {
 	return style.Render(l.String())
 }
 
-func HelpWindow() string {
-	helpText := "Help:\n" +
-		"  - j/k (or arrow keys): navigate key list\n" +
-		"  - Enter: Update highlighted key\n" +
-		"  - d: Delete highlighted key\n" +
-		"  - /: Filter keys\n" +
-		"  - n: Next key list\n" +
-		"  - p: Previous key list\n" +
-		"  - q or Esc or Ctrl-c:  quit\n"
-
-	return lipgloss.NewStyle().
-		Padding(1).
-		BorderStyle(lipgloss.DoubleBorder()).
-		BorderForeground(gray).
-		Render(helpText)
-}
-
 func TTLIndicator(ttl int64) string {
 	if ttl < 0 {
 		return ""
@@ -180,4 +163,29 @@ func ErrorBox(msg string, width, height int) string {
 		BorderForeground(color).
 		Foreground(color).
 		Render(msg)
+}
+
+func HelpPane() string {
+	helpText := "j/k: Enter:update d:del /:filter n/p:next/prev q/Esc:quit ?:help"
+	return lipgloss.NewStyle().
+		Padding(0, 1).
+		Foreground(gray).
+		Render(helpText)
+}
+
+func HelpWindow() string {
+	helpText := "Help:\n" +
+		"  - j/k (or arrow keys): navigate key list\n" +
+		"  - Enter: Update highlighted key\n" +
+		"  - d: Delete highlighted key\n" +
+		"  - /: Filter keys\n" +
+		"  - n: Next key list\n" +
+		"  - p: Previous key list\n" +
+		"  - q or Esc or Ctrl-c:  quit\n"
+
+	return lipgloss.NewStyle().
+		Padding(1).
+		BorderStyle(lipgloss.DoubleBorder()).
+		BorderForeground(gray).
+		Render(helpText)
 }

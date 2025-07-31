@@ -17,7 +17,6 @@ func (m Model) View() string {
 			m.CurrentKeyList(),
 			m.HostName(),
 		)
-
 	case HelpWindowState:
 		return help.Render(m.width, m.height)
 	}

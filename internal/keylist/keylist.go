@@ -15,6 +15,9 @@ func Render(
 	keys []string,
 	host string,
 ) string {
+	// Reserve 2 lines for the help pane (1 for help, 1 for spacing)
+	helpPaneHeight := 2
+	height = max(0, height-helpPaneHeight)
 	// Calculate widths and heights
 	widthKeyListView := width / 3
 	heightLeftPane := height - 10  // Adjust for header and footer
@@ -57,5 +60,6 @@ func Render(
 		),
 	)
 
-	return app
+	// Add the always-visible help pane at the bottom
+	return lipgloss.JoinVertical(lipgloss.Left, app, component.HelpPane())
 }
