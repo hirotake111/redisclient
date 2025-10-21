@@ -6,6 +6,7 @@ import (
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/lipgloss/list"
+	"github.com/hirotake111/redisclient/internal/color"
 )
 
 const (
@@ -16,33 +17,26 @@ const (
 )
 
 var (
-	blue  = lipgloss.Color("33")      // Blue color for info messages
-	gray  = lipgloss.Color("240")     // Gray color for general text
-	green = lipgloss.Color("34")      // Green color for success messages
-	pink  = lipgloss.Color("205")     // Pink color for error messages
-	red   = lipgloss.Color("#f70a8c") // Red color for error messages
-	white = lipgloss.Color("255")     // White color for text
-
 	// Styles for various UI components
 	tabContainerStyle = lipgloss.NewStyle().Padding(0, 1)
 	tabLabel          = lipgloss.NewStyle().
-				PaddingRight(1).
-				Background((blue)).
+				MarginRight(1).
+				Background((color.DarkRed)).
 				Render(dbLabel)
 	tabStyle = lipgloss.NewStyle().
 			Padding(0, 1).
-			Foreground(gray)
+			Foreground(color.Gray)
 	activeTabStyle = tabStyle.
-			Foreground(pink).
+			Foreground(color.Red).
 			Bold(true).
 			Underline(true)
 	keyListStyle = lipgloss.NewStyle().
 			BorderStyle(lipgloss.RoundedBorder()).
-			BorderForeground(gray)
+			BorderForeground(color.Gray)
 	headerStyle      = lipgloss.NewStyle().Padding(0, 1)
-	headerLabelStyle = lipgloss.NewStyle().Background(gray)
+	headerLabelStyle = lipgloss.NewStyle().Background(color.DarkRed)
 	TitleBarStyle    = lipgloss.NewStyle().PaddingLeft(1)
-	filterlabelStyle = lipgloss.NewStyle().PaddingLeft(1).Background(gray)
+	filterlabelStyle = lipgloss.NewStyle().PaddingLeft(1).Background(color.DarkRed)
 	filterFormStyle  = lipgloss.NewStyle().PaddingLeft(1)
 
 	// help messages
@@ -58,17 +52,17 @@ var (
 	}
 	helpTextStyle = lipgloss.NewStyle().
 			MarginRight(8).
-			Foreground(gray)
+			Foreground(color.Gray)
 )
 
 func Form(label, value string, active bool, width int) string {
 	form := lipgloss.NewStyle().
 		Width(width / 2).
 		BorderStyle(lipgloss.RoundedBorder()).
-		BorderForeground(gray)
+		BorderForeground(color.Gray)
 
 	if active {
-		form = form.BorderForeground(blue)
+		form = form.BorderForeground(color.Red)
 	}
 
 	return form.Render(lipgloss.JoinHorizontal(lipgloss.Top,
@@ -88,7 +82,11 @@ func HostHeader(host string) string {
 }
 
 func ValueDisplay(value string, width, height int) string {
-	maxChrs := (width - 2) * (height - 2) / 2 // Adjust for padding and borders
+	maxChrs := (width) * (height) // Adjust for padding and borders
+	log.Printf("width  : %d\n", width)
+	log.Printf("height : %d\n", height)
+	log.Printf("maxChrs: %d\n", maxChrs)
+	log.Printf("value : %s\n", value)
 	if len(value) > maxChrs {
 		value = value[:maxChrs-3] + "..." // Truncate long values
 	}
@@ -121,9 +119,9 @@ func TitleBar(title string) lipgloss.Style {
 func KeyList(keys []string, cur, height, width int, highlighted bool) string {
 	style := keyListStyle.Width(width).Height(height)
 	if highlighted {
-		style = style.BorderForeground(blue)
+		style = style.BorderForeground(color.Red)
 	}
-	maxWidthKey := max(0, width-4)
+	maxWidthKey := max(0, width-4) // Adjust for padding and borders
 
 	var keyFound = true
 	if len(keys) == 0 {
@@ -153,7 +151,7 @@ func KeyList(keys []string, cur, height, width int, highlighted bool) string {
 		}).
 		ItemStyleFunc(func(items list.Items, i int) lipgloss.Style {
 			if i == cur && keyFound {
-				return lipgloss.NewStyle().Background(green)
+				return lipgloss.NewStyle().Background(color.SoftRed)
 			}
 			return lipgloss.NewStyle()
 		})
@@ -172,17 +170,17 @@ func TTLIndicator(ttl int64) string {
 }
 
 func ErrorBox(msg string, width, height int) string {
-	var color = gray
+	var c = color.Gray
 	if msg != "" {
-		color = red
+		c = color.Red
 	}
 
 	return lipgloss.NewStyle().
 		Width(width).
 		Height(height).
 		BorderStyle(lipgloss.RoundedBorder()).
-		BorderForeground(color).
-		Foreground(color).
+		BorderForeground(c).
+		Foreground(c).
 		Render(msg)
 }
 

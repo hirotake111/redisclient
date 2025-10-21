@@ -8,35 +8,29 @@ import (
 	"github.com/charmbracelet/bubbles/textarea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/hirotake111/redisclient/internal/cmd"
+	"github.com/hirotake111/redisclient/internal/color"
 	"github.com/hirotake111/redisclient/internal/mode"
 	"github.com/hirotake111/redisclient/internal/values"
 	"github.com/redis/go-redis/v9"
 )
 
 var (
-	gray  = lipgloss.Color("240") // Gray color for general text
-	red   = lipgloss.Color("196") // Red color for error messages
-	pink  = lipgloss.Color("205") // Red color for error messages
-	green = lipgloss.Color("34")  // Green color for success messages
-	blue  = lipgloss.Color("33")  // Blue color for info messages
-	white = lipgloss.Color("255") // White color for text
-
 	// Styles for various UI components
 	tabStyle = lipgloss.NewStyle().
 			Padding(1, 1, 1, 1).
-			Foreground(gray)
+			Foreground(color.Gray)
 	activeTabStyle = tabStyle.
-			Foreground(pink).
+			Foreground(color.DarkRed).
 			Bold(true).
 			Underline(true)
 	keyListStyle = lipgloss.NewStyle().
 			BorderStyle(lipgloss.RoundedBorder()).
-			BorderForeground(gray)
+			BorderForeground(color.Gray)
 	footerStyle = lipgloss.NewStyle().
 			Padding(0, 1)
 	footerLabelStyle = lipgloss.NewStyle().
-				Background(gray).
-				Foreground(white)
+				Background(color.Gray).
+				Foreground(color.DarkRed)
 )
 
 type State string
@@ -267,8 +261,8 @@ func newCustomForm(prompt, placeholder string) *textarea.Model {
 	ff.SetWidth(100)
 	ff.CharLimit = 100
 	ff.KeyMap.InsertNewline.SetEnabled(false) // Disable newline insertion
-	ff.BlurredStyle.Base = ff.BlurredStyle.Base.Border(lipgloss.RoundedBorder()).BorderForeground(gray)
-	ff.FocusedStyle.Base = ff.FocusedStyle.Base.Border(lipgloss.RoundedBorder()).BorderForeground(blue)
+	ff.BlurredStyle.Base = ff.BlurredStyle.Base.Border(lipgloss.RoundedBorder()).BorderForeground(color.Gray)
+	ff.FocusedStyle.Base = ff.FocusedStyle.Base.Border(lipgloss.RoundedBorder()).BorderForeground(color.DarkRed)
 	ff.ShowLineNumbers = false
 	ff.Blur()
 	return &ff
