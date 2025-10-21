@@ -17,20 +17,20 @@ import (
 var (
 	// Styles for various UI components
 	tabStyle = lipgloss.NewStyle().
-			Padding(1, 1, 1, 1).
-			Foreground(color.Gray)
-	activeTabStyle = tabStyle.
-			Foreground(color.DarkRed).
-			Bold(true).
-			Underline(true)
-	keyListStyle = lipgloss.NewStyle().
-			BorderStyle(lipgloss.RoundedBorder()).
-			BorderForeground(color.Gray)
-	footerStyle = lipgloss.NewStyle().
-			Padding(0, 1)
-	footerLabelStyle = lipgloss.NewStyle().
-				Background(color.Gray).
-				Foreground(color.DarkRed)
+		Padding(1, 1, 1, 1).
+		Foreground(color.Primary)
+	// activeTabStyle = tabStyle.
+	// 		Foreground(color.Secondary).
+	// 		Bold(true).
+	// 		Underline(true)
+	// keyListStyle = lipgloss.NewStyle().
+	// 		BorderStyle(lipgloss.RoundedBorder()).
+	// 		BorderForeground(color.Primary)
+	// footerStyle = lipgloss.NewStyle().
+	// 		Padding(0, 1)
+	// footerLabelStyle = lipgloss.NewStyle().
+	// 			Background(color.Primary).
+	// 			Foreground(color.Secondary)
 )
 
 type State string
@@ -261,8 +261,8 @@ func newCustomForm(prompt, placeholder string) *textarea.Model {
 	ff.SetWidth(100)
 	ff.CharLimit = 100
 	ff.KeyMap.InsertNewline.SetEnabled(false) // Disable newline insertion
-	ff.BlurredStyle.Base = ff.BlurredStyle.Base.Border(lipgloss.RoundedBorder()).BorderForeground(color.Gray)
-	ff.FocusedStyle.Base = ff.FocusedStyle.Base.Border(lipgloss.RoundedBorder()).BorderForeground(color.DarkRed)
+	ff.BlurredStyle.Base = ff.BlurredStyle.Base.Border(lipgloss.RoundedBorder()).BorderForeground(color.Grey)
+	ff.FocusedStyle.Base = ff.FocusedStyle.Base.Border(lipgloss.RoundedBorder()).BorderForeground(color.Primary)
 	ff.ShowLineNumbers = false
 	ff.Blur()
 	return &ff

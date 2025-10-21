@@ -18,7 +18,7 @@ var (
 	}
 	helpTextStyle = lipgloss.NewStyle().
 			MarginRight(8).
-			Foreground(color.Gray)
+			Foreground(color.Grey)
 )
 
 func New(height int) string {

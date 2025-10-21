@@ -21,22 +21,22 @@ var (
 	tabContainerStyle = lipgloss.NewStyle().Padding(0, 1)
 	tabLabel          = lipgloss.NewStyle().
 				MarginRight(1).
-				Background((color.DarkRed)).
+				Background((color.Primary)).
 				Render(dbLabel)
 	tabStyle = lipgloss.NewStyle().
 			Padding(0, 1).
-			Foreground(color.Gray)
+			Foreground(color.Primary)
 	activeTabStyle = tabStyle.
-			Foreground(color.Red).
+			Foreground(color.Accent).
 			Bold(true).
 			Underline(true)
 	keyListStyle = lipgloss.NewStyle().
 			BorderStyle(lipgloss.RoundedBorder()).
-			BorderForeground(color.Gray)
-	headerStyle      = lipgloss.NewStyle().Padding(0, 1)
-	headerLabelStyle = lipgloss.NewStyle().Background(color.DarkRed)
+			BorderForeground(color.Grey)
+	headerStyle      = lipgloss.NewStyle().Padding(0, 1).Foreground(color.Accent)
+	headerLabelStyle = lipgloss.NewStyle().Background(color.Primary)
 	TitleBarStyle    = lipgloss.NewStyle().PaddingLeft(1)
-	filterlabelStyle = lipgloss.NewStyle().PaddingLeft(1).Background(color.DarkRed)
+	filterlabelStyle = lipgloss.NewStyle().PaddingLeft(1).Background(color.Secondary)
 	filterFormStyle  = lipgloss.NewStyle().PaddingLeft(1)
 
 	// help messages
@@ -52,17 +52,17 @@ var (
 	}
 	helpTextStyle = lipgloss.NewStyle().
 			MarginRight(8).
-			Foreground(color.Gray)
+			Foreground(color.Primary)
 )
 
 func Form(label, value string, active bool, width int) string {
 	form := lipgloss.NewStyle().
 		Width(width / 2).
 		BorderStyle(lipgloss.RoundedBorder()).
-		BorderForeground(color.Gray)
+		BorderForeground(color.Grey)
 
 	if active {
-		form = form.BorderForeground(color.Red)
+		form = form.BorderForeground(color.Grey)
 	}
 
 	return form.Render(lipgloss.JoinHorizontal(lipgloss.Top,
@@ -93,7 +93,7 @@ func ValueDisplay(value string, width, height int) string {
 	return lipgloss.NewStyle().
 		Padding(0, 1).
 		BorderStyle(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color("240")).
+		BorderForeground(color.Primary).
 		Width(width).
 		Height(height).
 		Render(value)
@@ -119,7 +119,7 @@ func TitleBar(title string) lipgloss.Style {
 func KeyList(keys []string, cur, height, width int, highlighted bool) string {
 	style := keyListStyle.Width(width).Height(height)
 	if highlighted {
-		style = style.BorderForeground(color.Red)
+		style = style.BorderForeground(color.Primary)
 	}
 	maxWidthKey := max(0, width-4) // Adjust for padding and borders
 
@@ -151,7 +151,7 @@ func KeyList(keys []string, cur, height, width int, highlighted bool) string {
 		}).
 		ItemStyleFunc(func(items list.Items, i int) lipgloss.Style {
 			if i == cur && keyFound {
-				return lipgloss.NewStyle().Background(color.SoftRed)
+				return lipgloss.NewStyle().Background(color.Primary)
 			}
 			return lipgloss.NewStyle()
 		})
@@ -170,9 +170,9 @@ func TTLIndicator(ttl int64) string {
 }
 
 func ErrorBox(msg string, width, height int) string {
-	var c = color.Gray
+	var c = color.Primary
 	if msg != "" {
-		c = color.Red
+		c = color.Error
 	}
 
 	return lipgloss.NewStyle().
