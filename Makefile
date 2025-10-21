@@ -1,5 +1,6 @@
 APP_NAME=redisclient
 BIN_DIR=bin
+LOG_FILE=/tmp/redisclient.log
 
 .PHONY: build run test clean fake-data
 
@@ -17,3 +18,6 @@ clean:
 
 fake-data: # Generate fake data for testing
 	go run ./script/data.go
+
+log: # View application logs
+	less $(LOG_FILE)
