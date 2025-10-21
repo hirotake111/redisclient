@@ -41,7 +41,7 @@ func Render(
 		component.ValueDisplay(mode.Value.Data(), widthRightPane, heightValueDisplay),
 		component.ErrorBox(mode.ErrorMsg, widthRightPane, heightErrorBox),
 	)
-	header := component.Header(host)
+	header := component.HostHeader(host)
 
 	var form string
 	if mode.UpdateForm.Focused() {
@@ -51,13 +51,13 @@ func Render(
 	}
 
 	app := lipgloss.JoinVertical(lipgloss.Left,
-		header,
 		tabRow,
 		form,
 		lipgloss.JoinHorizontal(lipgloss.Top,
 			keyListGroup,
 			valueDisplayGroup,
 		),
+		header,
 	)
 
 	// Add the always-visible help pane at the bottom
