@@ -13,23 +13,24 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-const (
-	keysPreQuery = 30 // Number of keys to prefetch when scanning Redis
-)
-
 func DisplayEmptyValue() tea.Msg {
 	return ValueUpdatedMsg{}
 }
 
-func GetKeys(ctx context.Context, redis *redis.Client, cursor uint64, pattern string) tea.Cmd {
+func GetKeys(ctx context.Context, redis *redis.Client, pattern string) tea.Cmd {
 	return func() tea.Msg {
-		log.Printf("Fetching keys from Redis with pattern \"%s\" with cursor %d ...", pattern, cursor)
-		keys, cursor, err := redis.Scan(ctx, cursor, pattern, keysPreQuery).Result()
+		if pattern == "" {
+			pattern = "*"
+		}
+
+		log.Printf("Fetching keys from Redis with pattern \"%s\", db: %d", pattern, redis.Options().DB)
+		keys, err := redis.Keys(ctx, pattern).Result()
 		if err != nil {
 			return ErrMsg{Err: err}
 		}
-		log.Printf("Fetched %d keys from Redis. Cursor: %d", len(keys), cursor)
-		return KeysUpdatedMsg{Keys: keys, RedisCursor: cursor}
+		log.Printf("Fetched %d keys from Redis(DB: %d)", len(keys))
+
+		return KeysUpdatedMsg{Keys: keys}
 	}
 }
 
@@ -39,7 +40,7 @@ func GetValue(ctx context.Context, redis *redis.Client, key string) tea.Cmd {
 		if err != nil {
 			return ErrMsg{Err: err}
 		}
-		log.Printf("Fetching value for key %s of type %s", key, t)
+		log.Printf("Fetching value for key \"%s\" of type %s", key, t)
 		var newValue string
 		switch t {
 		case "string":
@@ -47,7 +48,7 @@ func GetValue(ctx context.Context, redis *redis.Client, key string) tea.Cmd {
 			if err != nil {
 				return ErrMsg{Err: err}
 			}
-			log.Printf("Fetched value for key %s", key)
+			log.Printf("Fetched value for key \"%s\"", key)
 			newValue = escapeCharacter(value)
 
 		case "hash":
@@ -144,24 +145,25 @@ func UpdateValue(ctx context.Context, client *redis.Client, key string, newValue
 
 func DeleteKey(ctx context.Context, client *redis.Client, key string) tea.Cmd {
 	return func() tea.Msg {
-		log.Printf("Deleting key %s from Redis", key)
+		log.Printf("Deleting key \"%s\" from Redis", key)
 		if err := client.Del(ctx, key).Err(); err != nil {
 			return ErrMsg{Err: err}
 		}
-		log.Printf("Deleted key %s successfully", key)
+		log.Printf("Deleted key \"%s\" successfully", key)
 		return KeyDeletedMsg{Key: key}
 	}
 }
 
-func UpdateDatabase(ctx context.Context, client *redis.Client, db int) tea.Cmd {
-	log.Printf("Updating Redis database to %d", db)
-	client.Options().DB = db
+func SwitchTab(ctx context.Context, client *redis.Client, tab int) tea.Cmd {
+	log.Printf("Switching to tab %d", tab)
+	client.Options().DB = tab
 	nc := redis.NewClient(client.Options())
+
 	return func() tea.Msg {
 		if _, err := nc.Ping(ctx).Result(); err != nil {
 			return ErrMsg{Err: err}
 		}
-		log.Printf("Switched to Redis database %d", db)
+		log.Printf("Switched to tab %d", tab)
 		return NewRedisClientMsg{Redis: nc} // No message needed for successful DB switch
 	}
 }

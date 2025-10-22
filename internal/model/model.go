@@ -7,9 +7,11 @@ import (
 
 	"github.com/charmbracelet/bubbles/textarea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/hirotake111/redisclient/internal/apperror"
 	"github.com/hirotake111/redisclient/internal/cmd"
 	"github.com/hirotake111/redisclient/internal/color"
 	"github.com/hirotake111/redisclient/internal/mode"
+	"github.com/hirotake111/redisclient/internal/util"
 	"github.com/hirotake111/redisclient/internal/values"
 	"github.com/redis/go-redis/v9"
 )
@@ -36,8 +38,8 @@ var (
 type State string
 
 const (
-	tabSize         = 16 // Default number of database indexes
-	ListState State = "list"
+	defaultTabSize       = 16 // Default number of database indexes
+	ListState      State = "list"
 )
 
 type Model struct {
@@ -61,12 +63,10 @@ func NewModel(ctx context.Context, redis *redis.Client) Model {
 		mode: mode.NewListMode(
 			"",             // ErrorMsg
 			0,              // CurrentKeyIdx
-			0,              // RedisCursor
-			[][]string{},   // Keys
-			0,              // KeyHistoryIdx
+			[]string{},     // Keys
 			uf,             // UpdateForm
 			ff,             // FilterForm
-			tabSize,        // Tabs
+			defaultTabSize, // Tabs
 			0,              // CurrentTab
 			values.Value{}, // Value
 		),
@@ -92,23 +92,11 @@ func (m Model) UpdateWindowSize(height, width int) Model {
 }
 
 func (m Model) UpdateKeyList(msg cmd.KeysUpdatedMsg) Model {
-	m.mode.RedisCursor = msg.RedisCursor
-	m.mode.Keys = append(m.mode.Keys, msg.Keys)
-	m.mode.KeyHistoryIdx = len(m.mode.Keys) - 1 // Reset to the latest history
-	m = m.ClearCurrentKeyIdx()
-	return m
-}
-
-func (m Model) CurrentKeyList() []string {
-	if len(m.mode.Keys) == 0 {
-		log.Print("No keys available in the current history")
-		return []string{}
-	}
-	return m.mode.Keys[m.mode.KeyHistoryIdx]
+	return m.ReplaceKeys(msg.Keys)
 }
 
 func (m Model) CurrentKey() string {
-	return m.CurrentKeyList()[m.mode.CurrentKeyIdx]
+	return m.mode.Keys[m.mode.CurrentKeyIdx]
 }
 
 func (m Model) UpdateValue(msg cmd.ValueUpdatedMsg) Model {
@@ -121,29 +109,6 @@ func (m Model) NextTab() Model {
 	return m
 }
 
-func (m Model) NextHistory() Model {
-	if m.mode.KeyHistoryIdx < len(m.mode.Keys)-1 {
-		m.mode.KeyHistoryIdx++
-		m = m.ClearCurrentKeyIdx()
-		log.Printf("Moved to next history[%d]", m.mode.KeyHistoryIdx)
-		log.Printf("Current key list: %v", m.CurrentKeyList())
-	} else {
-		log.Print("No more history to navigate")
-	}
-	return m
-}
-
-func (m Model) PreviousHistory() Model {
-	if m.mode.KeyHistoryIdx > 0 {
-		m.mode.KeyHistoryIdx--
-		m = m.ClearCurrentKeyIdx()
-		log.Printf("Moved to previous history[%d]", m.mode.KeyHistoryIdx)
-	} else {
-		log.Print("No previous history to navigate")
-	}
-	return m
-}
-
 func (m Model) PreviousTab() Model {
 	if m.mode.CurrentTab == 0 {
 		m.mode.CurrentTab = m.mode.Tabs - 1 // Wrap around to the last tab
@@ -153,34 +118,35 @@ func (m Model) PreviousTab() Model {
 	return m
 }
 
-func (m Model) MoveCursorDown() Model {
-	m.mode.CurrentKeyIdx = min(m.mode.CurrentKeyIdx+1, len(m.CurrentKeyList())-1)
+func (m Model) MoveCursorDown() (Model, error) {
+	if len(m.mode.Keys) == 0 {
+		return m, apperror.CantMoveCursorDownError
+	}
+	if m.mode.CurrentKeyIdx+1 == len(m.mode.Keys) {
+		return m, apperror.CantMoveCursorDownError
+	}
+	m.mode.CurrentKeyIdx++
 	log.Printf("Cursor moved down to index %d", m.mode.CurrentKeyIdx)
-	return m
+	return m, nil
 }
 
-func (m Model) MoveCursorUp() Model {
-	m.mode.CurrentKeyIdx = max(m.mode.CurrentKeyIdx-1, 0)
-	return m
-}
-
-func (m Model) HasNextHistory() bool {
-	return m.mode.KeyHistoryIdx < len(m.mode.Keys)-1
-}
-
-func (m Model) HasMoreKeysOnServer() bool {
-	return m.mode.RedisCursor > 0
-}
-
-func (m Model) HasPreviousKeys() bool {
-	return m.mode.KeyHistoryIdx > 0
+func (m Model) MoveCursorUp() (Model, error) {
+	if len(m.mode.Keys) == 0 {
+		return m, apperror.CantMoveCursorUpError
+	}
+	if m.mode.CurrentKeyIdx-1 < 0 {
+		return m, apperror.CantMoveCursorUpError
+	}
+	m.mode.CurrentKeyIdx--
+	log.Printf("Cursor moved up to index %d", m.mode.CurrentKeyIdx)
+	return m, nil
 }
 
 func (m Model) currentKey() string {
-	if m.mode.CurrentKeyIdx < 0 || m.mode.CurrentKeyIdx >= len(m.CurrentKeyList()) {
+	if m.mode.CurrentKeyIdx < 0 || m.mode.CurrentKeyIdx >= len(m.mode.Keys) {
 		return ""
 	}
-	return m.CurrentKeyList()[m.mode.CurrentKeyIdx]
+	return m.mode.Keys[m.mode.CurrentKeyIdx]
 }
 
 func (m Model) UpdateRedisClient(msg cmd.NewRedisClientMsg) Model {
@@ -189,29 +155,16 @@ func (m Model) UpdateRedisClient(msg cmd.NewRedisClientMsg) Model {
 	return m
 }
 
-func (m Model) ClearCurrentKeyIdx() Model {
+func (m Model) ResetKeyIndex() Model {
 	m.mode.CurrentKeyIdx = 0
-	log.Print("Clearing key index position")
-	return m
-}
-
-func (m Model) ClearKeyHistory() Model {
-	m.mode.Keys = [][]string{}
-	m.mode.KeyHistoryIdx = 0
-	log.Print("Clearing key history")
-	return m
-}
-
-func (m Model) ClearRedisCursor() Model {
-	m.mode.RedisCursor = 0
-	log.Print("Clearing Redis cursor")
+	log.Print("Reset key index position to 0")
 	return m
 }
 
 func (m Model) DeleteKeyFromList(key string) Model {
 	log.Printf("Deleting key %s from current key list", key)
 	if len(m.mode.Keys) == 0 {
-		log.Print("No keys available to delete")
+		log.Print("No keys available to delete - skip deletion")
 		return m
 	}
 
@@ -219,13 +172,8 @@ func (m Model) DeleteKeyFromList(key string) Model {
 		log.Print("Empty key provided for deletion - ignoring")
 		return m
 	}
-	keys := make([]string, 0, len(m.CurrentKeyList())-1)
-	for _, k := range m.CurrentKeyList() {
-		if k != key {
-			keys = append(keys, k)
-		}
-	}
-	m.mode.Keys[m.mode.KeyHistoryIdx] = keys
+
+	m.mode.Keys = util.Filter(m.mode.Keys, func(k string) bool { return k != key })
 	return m
 }
 
@@ -250,6 +198,12 @@ func (m Model) UpdateErrorMessage(err error) Model {
 func (m Model) ClearErrorMessage() Model {
 	log.Print("Clearing error message")
 	m.mode.ErrorMsg = ""
+	return m
+}
+
+func (m Model) ReplaceKeys(keys []string) Model {
+	log.Printf("Replacing key list with %d new keys", len(keys))
+	m.mode.Keys = keys
 	return m
 }
 

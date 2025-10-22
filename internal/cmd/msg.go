@@ -11,8 +11,7 @@ type TimedOutMsg struct {
 }
 
 type KeysUpdatedMsg struct {
-	Keys        []string
-	RedisCursor uint64
+	Keys []string
 }
 
 type ValueUpdatedMsg struct {

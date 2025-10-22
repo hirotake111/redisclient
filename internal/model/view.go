@@ -30,7 +30,7 @@ func (m Model) View() string {
 			m.mode,
 			width,
 			height,
-			m.CurrentKeyList(),
+			m.mode.Keys,
 			m.HostName(),
 		)
 		return appShellStyle.Render(

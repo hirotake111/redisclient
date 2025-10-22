@@ -23,11 +23,11 @@ func Render(
 	widthLeftPane := width / 3
 	widthRightPane := width - widthLeftPane - 5
 
-	tabRow := component.TabRow(mode.Tabs, mode.CurrentTab)
+	tabRow := component.TabRow(mode.Tabs, mode.DbIndex)
 
 	keyListHighlighted := !(mode.FilterForm.Focused() || mode.UpdateForm.Focused())
 	keyListGroup := lipgloss.JoinVertical(lipgloss.Top,
-		component.KeyListTitle(widthLeftPane, mode.KeyHistoryIdx, mode.RedisCursor),
+		component.KeyListTitle(widthLeftPane),
 		component.KeyList(keys, mode.CurrentKeyIdx, heightLeftPane, widthLeftPane, keyListHighlighted),
 	)
 

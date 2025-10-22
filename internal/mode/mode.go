@@ -9,13 +9,11 @@ import (
 type ListMode struct {
 	ErrorMsg      string
 	CurrentKeyIdx int
-	RedisCursor   uint64
-	Keys          [][]string
-	KeyHistoryIdx int
+	Keys          []string
 	UpdateForm    *textarea.Model
 	FilterForm    *textarea.Model
 	Tabs          int
-	CurrentTab    int
+	CurrentTab    int // Also an index for Redis database
 	Value         values.Value
 }
 
@@ -23,9 +21,7 @@ type ListMode struct {
 func NewListMode(
 	errorMsg string,
 	currentKeyIdx int,
-	redisCursor uint64,
-	keys [][]string,
-	keyHistoryIdx int,
+	keys []string,
 	updateForm *textarea.Model,
 	filterForm *textarea.Model,
 	tabs int,
@@ -36,9 +32,7 @@ func NewListMode(
 	return &ListMode{
 		ErrorMsg:      errorMsg,
 		CurrentKeyIdx: currentKeyIdx,
-		RedisCursor:   redisCursor,
 		Keys:          keys,
-		KeyHistoryIdx: keyHistoryIdx,
 		UpdateForm:    updateForm,
 		FilterForm:    filterForm,
 		Tabs:          tabs,

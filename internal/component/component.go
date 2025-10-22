@@ -1,7 +1,6 @@
 package component
 
 import (
-	"fmt"
 	"log"
 	"strconv"
 
@@ -81,11 +80,8 @@ func HostHeader(host string) string {
 }
 
 func ValueDisplay(value string, width, height int) string {
+	log.Printf("Rendering value display with width: %d, height: %d, value: \"%s\"", width, height, value)
 	maxChrs := (width) * (height) // Adjust for padding and borders
-	log.Printf("width  : %d\n", width)
-	log.Printf("height : %d\n", height)
-	log.Printf("maxChrs: %d\n", maxChrs)
-	log.Printf("value : %s\n", value)
 	if len(value) > maxChrs {
 		value = value[:maxChrs-3] + "..." // Truncate long values
 	}
@@ -111,10 +107,10 @@ func TabRow(tabs int, currentTab int) string {
 	return tabContainerStyle.Render(lipgloss.JoinHorizontal(lipgloss.Top, _tabs...))
 }
 
-func KeyListTitle(width, page int, cursor uint64) string {
+func KeyListTitle(width int) string {
 	return titleBarStyle.
 		Width(width).
-		Render(fmt.Sprintf("KEYS (PAGE: %d, CURSOR: %d)", page, cursor))
+		Render("KEYS")
 }
 
 func TitleBar(title string) lipgloss.Style {
@@ -150,12 +146,7 @@ func KeyList(keys []string, cur, height, width int, highlighted bool) string {
 	}
 
 	l := list.New(listItems).
-		Enumerator(func(items list.Items, i int) string {
-			if i == cur && keyFound {
-				return "▶ " // Current item indicator
-			}
-			return ""
-		}).
+		Enumerator(func(items list.Items, i int) string { return "" }). // No bullets
 		ItemStyleFunc(func(items list.Items, i int) lipgloss.Style {
 			if i == cur && keyFound {
 				return lipgloss.NewStyle().Background(color.Primary)
