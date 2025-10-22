@@ -1,6 +1,7 @@
 package component
 
 import (
+	"fmt"
 	"log"
 	"strconv"
 
@@ -30,12 +31,10 @@ var (
 			Foreground(color.Accent).
 			Bold(true).
 			Underline(true)
-	keyListStyle = lipgloss.NewStyle().
-			BorderStyle(lipgloss.RoundedBorder()).
-			BorderForeground(color.Grey)
+	keyListStyle     = lipgloss.NewStyle().BorderStyle(lipgloss.RoundedBorder())
 	headerStyle      = lipgloss.NewStyle().Padding(0, 1).Foreground(color.Accent)
 	headerLabelStyle = lipgloss.NewStyle().Background(color.Primary)
-	TitleBarStyle    = lipgloss.NewStyle().PaddingLeft(1)
+	titleBarStyle    = lipgloss.NewStyle().PaddingLeft(1)
 	filterlabelStyle = lipgloss.NewStyle().PaddingLeft(1).Background(color.Secondary)
 	filterFormStyle  = lipgloss.NewStyle().PaddingLeft(1)
 
@@ -112,16 +111,24 @@ func TabRow(tabs int, currentTab int) string {
 	return tabContainerStyle.Render(lipgloss.JoinHorizontal(lipgloss.Top, _tabs...))
 }
 
+func KeyListTitle(width, page int, cursor uint64) string {
+	return titleBarStyle.
+		Width(width).
+		Render(fmt.Sprintf("KEYS (PAGE: %d, CURSOR: %d)", page, cursor))
+}
+
 func TitleBar(title string) lipgloss.Style {
-	return TitleBarStyle.SetString(title)
+	return titleBarStyle.SetString(title)
 }
 
 func KeyList(keys []string, cur, height, width int, highlighted bool) string {
+	maxWidthKey := max(0, width-4) // Adjust for padding and borders
 	style := keyListStyle.Width(width).Height(height)
 	if highlighted {
 		style = style.BorderForeground(color.Primary)
+	} else {
+		style = style.BorderForeground(color.Grey)
 	}
-	maxWidthKey := max(0, width-4) // Adjust for padding and borders
 
 	var keyFound = true
 	if len(keys) == 0 {
@@ -159,7 +166,7 @@ func KeyList(keys []string, cur, height, width int, highlighted bool) string {
 	return style.Render(l.String())
 }
 
-func TTLIndicator(ttl int64) string {
+func ttlIndicator(ttl int64) string {
 	if ttl < 0 {
 		return ""
 	}
@@ -206,4 +213,15 @@ func HelpPane() string {
 		table = append(table, s)
 	}
 	return lipgloss.JoinHorizontal(lipgloss.Top, table...)
+}
+
+func ValueTitle(ttl int64) string {
+	return lipgloss.JoinHorizontal(lipgloss.Left,
+		titleBarStyle.Render("VALUE"),
+		ttlIndicator(ttl),
+	)
+}
+
+func ErrorTitle(width int) string {
+	return titleBarStyle.Width(width).Render("ERROR MESSAGE")
 }

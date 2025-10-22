@@ -1,8 +1,6 @@
 package keylist
 
 import (
-	"fmt"
-
 	"github.com/charmbracelet/lipgloss"
 	"github.com/hirotake111/redisclient/internal/component"
 	"github.com/hirotake111/redisclient/internal/mode"
@@ -26,24 +24,21 @@ func Render(
 	widthRightPane := width - widthLeftPane - 5
 
 	tabRow := component.TabRow(mode.Tabs, mode.CurrentTab)
-	keyListTitle := component.TitleBarStyle.
-		Width(widthLeftPane).
-		Render(fmt.Sprintf("KEYS (PAGE: %d, CURSOR: %d)", mode.KeyHistoryIdx, mode.RedisCursor))
-	keyList := component.KeyList(keys, mode.CurrentKeyIdx, heightLeftPane, widthLeftPane, !(mode.FilterForm.Focused() || mode.UpdateForm.Focused()))
-	keyListGroup := lipgloss.JoinVertical(lipgloss.Top, keyListTitle, keyList)
+
+	keyListHighlighted := !(mode.FilterForm.Focused() || mode.UpdateForm.Focused())
+	keyListGroup := lipgloss.JoinVertical(lipgloss.Top,
+		component.KeyListTitle(widthLeftPane, mode.KeyHistoryIdx, mode.RedisCursor),
+		component.KeyList(keys, mode.CurrentKeyIdx, heightLeftPane, widthLeftPane, keyListHighlighted),
+	)
 
 	valueDisplayGroup := lipgloss.JoinVertical(lipgloss.Top,
-		lipgloss.JoinHorizontal(lipgloss.Left,
-			component.TitleBarStyle.Render("VALUE"),
-			component.TTLIndicator(mode.Value.TTL()),
-		),
+		component.ValueTitle(mode.Value.TTL()),
 		component.ValueDisplay(mode.Value.Data(), widthRightPane, heightValueDisplay),
-		component.TitleBarStyle.
-			Width(widthLeftPane).
-			Render("ERROR MESSAGE"),
+		component.ErrorTitle(widthLeftPane),
 		component.ErrorBox(mode.ErrorMsg, widthRightPane, heightErrorBox),
 	)
-	header := component.HostHeader(host)
+
+	hostHeader := component.HostHeader(host)
 
 	var form string
 	if mode.UpdateForm.Focused() {
@@ -59,6 +54,6 @@ func Render(
 			keyListGroup,
 			valueDisplayGroup,
 		),
-		header,
+		hostHeader,
 	)
 }
