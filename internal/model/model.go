@@ -10,29 +10,11 @@ import (
 	"github.com/hirotake111/redisclient/internal/apperror"
 	"github.com/hirotake111/redisclient/internal/cmd"
 	"github.com/hirotake111/redisclient/internal/color"
+	"github.com/hirotake111/redisclient/internal/component/list"
 	"github.com/hirotake111/redisclient/internal/mode"
 	"github.com/hirotake111/redisclient/internal/util"
 	"github.com/hirotake111/redisclient/internal/values"
 	"github.com/redis/go-redis/v9"
-)
-
-var (
-	// Styles for various UI components
-	tabStyle = lipgloss.NewStyle().
-		Padding(1, 1, 1, 1).
-		Foreground(color.Primary)
-	// activeTabStyle = tabStyle.
-	// 		Foreground(color.Secondary).
-	// 		Bold(true).
-	// 		Underline(true)
-	// keyListStyle = lipgloss.NewStyle().
-	// 		BorderStyle(lipgloss.RoundedBorder()).
-	// 		BorderForeground(color.Primary)
-	// footerStyle = lipgloss.NewStyle().
-	// 		Padding(0, 1)
-	// footerLabelStyle = lipgloss.NewStyle().
-	// 			Background(color.Primary).
-	// 			Foreground(color.Secondary)
 )
 
 type State string
@@ -92,6 +74,7 @@ func (m Model) UpdateWindowSize(height, width int) Model {
 }
 
 func (m Model) UpdateKeyList(msg cmd.KeysUpdatedMsg) Model {
+	m.mode.KeyList = list.New(msg.Keys, 30, 20)
 	return m.ReplaceKeys(msg.Keys)
 }
 

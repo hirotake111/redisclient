@@ -15,6 +15,7 @@ func (m Model) Init() tea.Cmd {
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var err error
+	var cmds []tea.Cmd
 
 	if err, ok := msg.(cmd.ErrMsg); ok {
 		log.Printf("Received error message: %s", err.Err)
@@ -34,6 +35,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil // No action for other timeout kinds
 	}
 
+	var c tea.Cmd
+	m.mode.KeyList, c = m.mode.KeyList.Update(msg) // Update the key list component
+	cmds = append(cmds, c)
+
 	switch m.State {
 	case ListState:
 		if m.mode.UpdateForm.Focused() {
@@ -47,18 +52,17 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if key == tea.KeyEsc.String() || key == tea.KeyCtrlC.String() {
 					log.Print("Exiting update value form")
 					m.mode.UpdateForm.Blur()
-					return m, nil
 				}
 				if key == tea.KeyEnter.String() {
 					log.Printf("Updating value for key: %s", m.currentKey())
 					m.mode.UpdateForm.Blur()
-					return m, cmd.UpdateValue(m.ctx, m.redis, m.currentKey(), m.mode.UpdateForm.Value())
+					cmds = append(cmds, cmd.UpdateValue(m.ctx, m.redis, m.currentKey(), m.mode.UpdateForm.Value()))
 				}
 				// Handle form input
 				log.Printf("Appending character \"%s\" to update form value for key \"%s\"", msg, m.currentKey())
 				newForm, cmd := m.mode.UpdateForm.Update(msg)
 				m.mode.UpdateForm = &newForm
-				return m, cmd
+				cmds = append(cmds, cmd)
 			}
 			return m, nil
 
@@ -74,19 +78,18 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if key == tea.KeyEsc.String() || key == tea.KeyCtrlC.String() {
 					log.Print("Exiting filter mode")
 					m.mode.FilterForm.Blur()
-					return m, nil
 				}
 				if key == tea.KeyEnter.String() {
 					log.Printf("Applyig filter keyword: \"%s\"", m.mode.FilterForm.Value())
 					m.mode.FilterForm.Blur()
 					m = m.ResetKeyIndex()
-					return m, cmd.GetKeys(m.ctx, m.redis, m.mode.FilterForm.Value()) // Re-fetch keys with the filter applied
+					cmds = append(cmds, cmd.GetKeys(m.ctx, m.redis, m.mode.FilterForm.Value()))
 				}
 				// Handle filter input
 				log.Printf("Appending character '%s' to form value", key)
 				newForm, cmd := m.mode.FilterForm.Update(msg)
 				m.mode.FilterForm = &newForm
-				return m, cmd
+				cmds = append(cmds, cmd)
 			}
 		}
 
@@ -101,47 +104,48 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if key == "j" || key == tea.KeyDown.String() {
 				log.Print("Moving cursor down")
 				if m, err = m.MoveCursorDown(); err != nil {
-					log.Println("m.MoveCursorDown: %s", err)
-					return m, nil
+					log.Printf("m.MoveCursorDown: %s", err)
+				} else {
+					cmds = append(cmds, cmd.GetValue(m.ctx, m.redis, m.currentKey()))
 				}
-				return m, cmd.GetValue(m.ctx, m.redis, m.currentKey())
 			}
 
 			if key == "k" || key == tea.KeyUp.String() {
 				log.Print("Moving cursor up")
 				if m, err = m.MoveCursorUp(); err != nil {
-					log.Println("m.MoveCursorUp: %s", err)
-					return m, nil
+					log.Printf("Error on m.MoveCursorUp: %s", err)
+				} else {
+					cmds = append(cmds, cmd.GetValue(m.ctx, m.redis, m.currentKey()))
 				}
-				return m, cmd.GetValue(m.ctx, m.redis, m.currentKey())
 			}
 
 			if key == tea.KeyEnter.String() {
 				log.Print("Actrivating update value form")
-				return m, m.mode.UpdateForm.Focus()
+				cmds = append(cmds, m.mode.UpdateForm.Focus())
 			}
 
 			if key == "/" {
 				log.Print("Activating filter mode")
-				return m, m.mode.FilterForm.Focus()
+				cmds = append(cmds, m.mode.FilterForm.Focus())
 			}
 
 			if key == "y" {
 				if m.mode.Value.Data() == "" {
-					return m, nil // No current key to copy
+					// No current key to copy
+				} else {
+					log.Print("key 'c' pressed, copying value of current key to clipboard")
+					cmds = append(cmds, cmd.CopyValueToClipboard(m.ctx, m.mode.Value.Data()))
 				}
-				log.Print("key 'c' pressed, copying value of current key to clipboard")
-				return m, cmd.CopyValueToClipboard(m.ctx, m.mode.Value.Data())
 			}
 
 			if key == tea.KeyTab.String() {
 				m = m.NextTab()
-				return m, cmd.SwitchTab(m.ctx, m.redis, m.mode.CurrentTab)
+				cmds = append(cmds, cmd.SwitchTab(m.ctx, m.redis, m.mode.CurrentTab))
 			}
 
 			if key == tea.KeyShiftTab.String() {
 				m = m.PreviousTab()
-				return m, cmd.SwitchTab(m.ctx, m.redis, m.mode.CurrentTab)
+				cmds = append(cmds, cmd.SwitchTab(m.ctx, m.redis, m.mode.CurrentTab))
 			}
 
 			if key == "d" {
@@ -149,14 +153,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				currentKey := m.currentKey()
 				if currentKey == "" {
 					log.Print("No current key selected for deletion")
-					return m, nil
+					return m, tea.Batch(cmds...)
 				}
 				log.Printf("Deleting key: %s", currentKey)
-				return m, cmd.DeleteKey(m.ctx, m.redis, currentKey)
+				cmds = append(cmds, cmd.DeleteKey(m.ctx, m.redis, currentKey))
 			}
 
 		case cmd.ValueUpdatedMsg:
-			return m.UpdateValue(msg), nil
+			m = m.UpdateValue(msg)
 
 		case cmd.KeysUpdatedMsg:
 			log.Printf("Received keys updated message. The message has %d keys", len(msg.Keys))
@@ -164,22 +168,22 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if len(msg.Keys) == 0 {
 				log.Print("No keys found, returning empty value")
 				m.EmptyValue()
-				return m, cmd.DisplayEmptyValue
+				cmds = append(cmds, cmd.DisplayEmptyValue)
+				return m, tea.Batch(cmds...)
 			}
-			return m, cmd.GetValue(m.ctx, m.redis, m.currentKey()) // Fetch value for the first key
+			cmds = append(cmds, cmd.GetValue(m.ctx, m.redis, m.currentKey())) // Fetch value for the first key
 
 		case cmd.KeyDeletedMsg:
 			log.Printf("Received key deleted message for key: %s", msg.Key)
 			m = m.DeleteKeyFromList(msg.Key)
-			return m, nil
 
 		case cmd.NewRedisClientMsg:
 			log.Print("Received new Redis client message")
 			m = m.UpdateRedisClient(msg).ResetKeyIndex()
-			return m, cmd.GetKeys(m.ctx, m.redis, m.mode.FilterForm.Value()) // Re-fetch keys with the new client
+			cmds = append(cmds, cmd.GetKeys(m.ctx, m.redis, m.mode.FilterForm.Value())) // Re-fetch keys with the new client
 		}
 
 	}
 
-	return m, nil
+	return m, tea.Batch(cmds...)
 }

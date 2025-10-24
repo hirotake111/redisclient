@@ -18,7 +18,7 @@ const (
 
 var (
 	// Styles for various UI components
-	tabContainerStyle = lipgloss.NewStyle().Padding(0, 1)
+	tabContainerStyle = lipgloss.NewStyle().Padding(0, 1).MarginBottom(1)
 	tabLabel          = lipgloss.NewStyle().
 				MarginRight(1).
 				Background((color.Primary)).
@@ -27,13 +27,13 @@ var (
 			Padding(0, 1).
 			Foreground(color.Primary)
 	activeTabStyle = tabStyle.
-			Foreground(color.Accent).
+			Foreground(color.White).
 			Bold(true).
 			Underline(true)
 	keyListStyle     = lipgloss.NewStyle().BorderStyle(lipgloss.RoundedBorder())
-	headerStyle      = lipgloss.NewStyle().Padding(0, 1).Foreground(color.Accent)
+	headerStyle      = lipgloss.NewStyle().Padding(0, 1).Foreground(color.White)
 	headerLabelStyle = lipgloss.NewStyle().Background(color.Primary)
-	titleBarStyle    = lipgloss.NewStyle().PaddingLeft(1)
+	titleBarStyle    = lipgloss.NewStyle().MarginBottom(1).Padding(0, 1).Background(color.Primary).Foreground(color.White)
 	filterlabelStyle = lipgloss.NewStyle().PaddingLeft(1).Background(color.Secondary)
 	filterFormStyle  = lipgloss.NewStyle().PaddingLeft(1)
 
@@ -71,27 +71,29 @@ func Form(label, value string, active bool, width int) string {
 }
 
 func HostHeader(host string) string {
-	return lipgloss.JoinHorizontal(lipgloss.Left,
+	return lipgloss.NewStyle().MarginTop(1).Render(lipgloss.JoinHorizontal(lipgloss.Left,
 		lipgloss.JoinHorizontal(lipgloss.Center,
 			headerLabelStyle.Render(hostLabel),
 			headerStyle.Render(host),
 		),
-	)
+	))
 }
 
-func ValueDisplay(value string, width, height int) string {
+func ValueDisplay(value string, ttl int64, width, height int) string {
 	log.Printf("Rendering value display with width: %d, height: %d, value: \"%s\"", width, height, value)
 	maxChrs := (width) * (height) // Adjust for padding and borders
 	if len(value) > maxChrs {
 		value = value[:maxChrs-3] + "..." // Truncate long values
 	}
-	return lipgloss.NewStyle().
+	style := lipgloss.NewStyle().
 		Padding(0, 1).
 		BorderStyle(lipgloss.RoundedBorder()).
 		BorderForeground(color.Primary).
 		Width(width).
-		Height(height).
-		Render(value)
+		Height(height - 8)
+
+	title := ValueTitle(ttl)
+	return style.Render(lipgloss.JoinVertical(lipgloss.Left, title, value))
 }
 
 func TabRow(tabs int, currentTab int) string {
@@ -172,14 +174,15 @@ func ErrorBox(msg string, width, height int) string {
 	if msg != "" {
 		c = color.Error
 	}
-
-	return lipgloss.NewStyle().
+	style := lipgloss.NewStyle().
 		Width(width).
 		Height(height).
+		Padding(0, 1).
 		BorderStyle(lipgloss.RoundedBorder()).
 		BorderForeground(c).
-		Foreground(c).
-		Render(msg)
+		Foreground(c)
+
+	return style.Render(lipgloss.JoinVertical(lipgloss.Left, ErrorTitle(), msg))
 }
 
 func HelpPane() string {
@@ -213,6 +216,6 @@ func ValueTitle(ttl int64) string {
 	)
 }
 
-func ErrorTitle(width int) string {
-	return titleBarStyle.Width(width).Render("ERROR MESSAGE")
+func ErrorTitle() string {
+	return titleBarStyle.Render("ERROR MESSAGE")
 }

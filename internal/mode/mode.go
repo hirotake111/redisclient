@@ -2,6 +2,7 @@ package mode
 
 import (
 	"github.com/charmbracelet/bubbles/textarea"
+	"github.com/hirotake111/redisclient/internal/component/list"
 	"github.com/hirotake111/redisclient/internal/values"
 )
 
@@ -15,6 +16,7 @@ type ListMode struct {
 	Tabs          int
 	CurrentTab    int // Also an index for Redis database
 	Value         values.Value
+	KeyList       list.CustomKeyList
 }
 
 // NewListMode returns a pointer to a new ListMode with zero values.
@@ -38,5 +40,6 @@ func NewListMode(
 		Tabs:          tabs,
 		CurrentTab:    currentTab,
 		Value:         value,
+		KeyList:       list.New(keys, 30, 20),
 	}
 }
