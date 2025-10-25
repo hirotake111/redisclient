@@ -6,36 +6,46 @@ import (
 )
 
 var (
-	helpMessages = []string{
-		"j or ↓: down",
-		"k or ↑: up",
-		"Enter: update current value",
-		"d: delete key",
-		"/: filter keys",
-		"n: next page",
-		"p: previous page",
-		"q/Esc: quit",
+	helpMessages = [][2]string{
+		{"j or ↓", "down"},
+		{"k or ↑", "up"},
+		{"h or ←", "left"},
+		{"l or →", "right"},
+		{"Enter", "update current value"},
+		{"d", "delete key"},
+		{"/", "filter keys"},
+		{"n", "next page"},
+		{"p", "previous page"},
+		{"q/string{", " Esc: quit"},
 	}
-	helpTextStyle = lipgloss.NewStyle().
-			MarginRight(8).
-			Foreground(color.Grey)
+	helpTextkeyStyle = lipgloss.NewStyle().
+				MarginRight(1).
+				Foreground(color.Grey)
+	helpTextValueStyle = helpTextkeyStyle.Foreground(color.Primary)
+	columnStyle        = lipgloss.NewStyle().MarginRight(8)
 )
 
 func New(height int) string {
 
-	t := make([][]string, 0)
-	for i, msg := range helpMessages {
+	tbl := make([][]string, 0)
+	for i, arr := range helpMessages {
 		idx := i / height
-		if len(t) <= idx {
-			t = append(t, make([]string, 0))
+		if len(tbl) <= idx {
+			tbl = append(tbl, make([]string, 0))
 		}
-		t[idx] = append(t[idx], msg)
+		tbl[idx] = append(tbl[idx], tooltipText(arr[0], arr[1]))
 
 	}
 	table := make([]string, 0)
-	for _, col := range t {
-		s := helpTextStyle.Render(lipgloss.JoinVertical(lipgloss.Left, col...))
-		table = append(table, s)
+	for _, txts := range tbl {
+		col := columnStyle.Render(lipgloss.JoinVertical(lipgloss.Left, txts...))
+		table = append(table, col)
 	}
 	return lipgloss.JoinHorizontal(lipgloss.Top, table...)
+}
+
+func tooltipText(key, val string) string {
+	ks := helpTextkeyStyle.Render(key + ":")
+	vs := helpTextValueStyle.Render(val)
+	return ks + vs
 }
