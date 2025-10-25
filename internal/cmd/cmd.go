@@ -28,7 +28,7 @@ func GetKeys(ctx context.Context, redis *redis.Client, pattern string) tea.Cmd {
 		if err != nil {
 			return ErrMsg{Err: err}
 		}
-		log.Printf("Fetched %d keys from Redis(DB: %d)", len(keys))
+		log.Printf("Fetched %d keys from Redis(DB: %d)", len(keys), redis.Options().DB)
 
 		return KeysUpdatedMsg{Keys: keys}
 	}

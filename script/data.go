@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"os"
 
@@ -9,8 +10,17 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
+const (
+	defaultNumItems = 1000
+)
+
 // This script generates a number of fake data and store it to Redis.
 func main() {
+	var numItems int
+	flag.IntVar(&numItems, "n", defaultNumItems, "Number of fake items to generate")
+	flag.Parse()
+	fmt.Printf("Generating %d fake items...\n", numItems)
+
 	ctx := context.Background()
 
 	cfg, err := config.GetConfigFromEnv()
@@ -26,7 +36,7 @@ func main() {
 	}
 
 	fmt.Println("Adding fake data to Redis...")
-	for i := range 1000 {
+	for i := 0; i < numItems; i++ {
 		key := fmt.Sprintf("key:%d", i)
 		value := fmt.Sprintf("value:%d", i)
 		if err := r.Set(ctx, key, value, 0).Err(); err != nil {
