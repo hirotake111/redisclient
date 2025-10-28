@@ -18,7 +18,7 @@ clean:
 	rm -f $(BIN_DIR)/$(APP_NAME)
 	
 fake-data: # Generate fake data for testing
-	go run ./script/data.go -n $(n)
+	go run ./script/data.go -n $(n) -b $(big)
 
 log: # View application logs
 	less $(LOG_FILE)

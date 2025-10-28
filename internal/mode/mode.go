@@ -3,7 +3,15 @@ package mode
 import (
 	"github.com/charmbracelet/bubbles/textarea"
 	"github.com/hirotake111/redisclient/internal/component/list"
+	"github.com/hirotake111/redisclient/internal/component/viewport"
 	"github.com/hirotake111/redisclient/internal/values"
+)
+
+const (
+	defaultKeyListWIdth   = 30
+	defaultKeyListHeight  = 20
+	defaultViewportWidth  = 50
+	defaultViewportHeight = 20
 )
 
 // ListMode holds the application state except for context, window size, and redis client.
@@ -17,6 +25,7 @@ type ListMode struct {
 	CurrentTab    int // Also an index for Redis database
 	Value         values.Value
 	KeyList       list.CustomKeyList
+	Viewport      viewport.Viewport
 }
 
 // NewListMode returns a pointer to a new ListMode with zero values.
@@ -28,7 +37,6 @@ func NewListMode(
 	filterForm *textarea.Model,
 	tabs int,
 	currentTab int,
-
 	value values.Value,
 ) *ListMode {
 	return &ListMode{
@@ -40,6 +48,7 @@ func NewListMode(
 		Tabs:          tabs,
 		CurrentTab:    currentTab,
 		Value:         value,
-		KeyList:       list.New(keys, 30, 20),
+		KeyList:       list.New(keys, defaultKeyListWIdth, defaultKeyListHeight),
+		Viewport:      viewport.New(defaultViewportWidth, defaultViewportHeight),
 	}
 }

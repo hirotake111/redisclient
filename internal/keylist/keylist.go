@@ -18,15 +18,15 @@ func Render(
 	host string,
 ) string {
 	// Calculate widths and heights
-	heightValueDisplay := height - heightErrorBox
-	heightLeftPane := heightValueDisplay + heightErrorBox - 6
+	heightValueDisplay := height - heightErrorBox - 7
+	heightLeftPane := heightValueDisplay + heightErrorBox + 2
 	widthLeftPane := width / 3
 	widthRightPane := width - widthLeftPane - 5
 
 	tabRow := component.TabRow(mode.Tabs, mode.CurrentTab)
 
 	valueDisplayGroup := lipgloss.JoinVertical(lipgloss.Top,
-		component.ValueDisplay(mode.Value.Data(), mode.Value.TTL(), widthRightPane, heightValueDisplay),
+		mode.Viewport.View(widthRightPane, heightValueDisplay),
 		component.ErrorBox(mode.ErrorMsg, widthRightPane, heightErrorBox),
 	)
 
