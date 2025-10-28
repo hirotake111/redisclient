@@ -24,7 +24,6 @@ type arrayElement struct {
 
 type CustomKeyList struct {
 	list.Model
-	sorted []arrayElement
 }
 
 type item string
@@ -48,8 +47,7 @@ func New(keys []string, width, height int) CustomKeyList {
 	})
 	// log.Printf("Key index map: %+v\n", ki)
 	return CustomKeyList{
-		Model:  newList(items, width, height),
-		sorted: arr,
+		Model: newList(items, width, height),
 	}
 }
 
@@ -107,8 +105,7 @@ func (l *CustomKeyList) Update(ctx context.Context, client *redis.Client, msg te
 	}
 
 	return CustomKeyList{
-		Model:  m,
-		sorted: l.sorted,
+		Model: m,
 	}, tea.Batch(cmds...)
 }
 
