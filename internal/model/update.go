@@ -36,12 +36,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	var c tea.Cmd
+	if m.mode.KeyList.FilterState() != list.Filtering {
+		m.mode.Viewport, c = m.mode.Viewport.Update(msg)
+		cmds = append(cmds, c)
+	}
 	if !m.mode.Viewport.IsActive() {
 		m.mode.KeyList, c = m.mode.KeyList.Update(m.ctx, m.redis, msg) // Update the key list component
 		cmds = append(cmds, c)
 	}
-	m.mode.Viewport, c = m.mode.Viewport.Update(msg)
-	cmds = append(cmds, c)
 
 	switch m.State {
 	case ListState:
@@ -57,7 +59,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 
 			if key == "enter" {
-				m.mode.Viewport.Toggle()
 				selected := m.mode.KeyList.SelectedItem().FilterValue()
 				cmds = append(cmds, command.GetValue(m.ctx, m.redis, selected))
 			}
