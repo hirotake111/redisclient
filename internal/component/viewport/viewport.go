@@ -107,8 +107,8 @@ func pretty(s string) string {
 			tabCount++
 			sb.WriteString(fmt.Sprintf("%c\n%s", r, strings.Repeat("  ", tabCount)))
 		case '}', ']':
-			sb.WriteString(fmt.Sprintf("\n%c%s", r, strings.Repeat("  ", tabCount-1)))
 			tabCount--
+			sb.WriteString(fmt.Sprintf("\n%s%c", strings.Repeat("  ", tabCount), r))
 		case ',':
 			sb.WriteString(",\n" + strings.Repeat("  ", tabCount))
 		default:
