@@ -59,22 +59,26 @@ func (v Viewport) View(width, height int) string {
 
 func (v Viewport) Update(msg tea.Msg) (Viewport, tea.Cmd) {
 	// log.Printf("Viewport received message: %+v", msg)
-	switch msg := msg.(type) {
-	case command.ValueUpdatedMsg:
+	var cmd tea.Cmd
+	if msg, ok := msg.(command.ValueUpdatedMsg); ok {
 		v.ttl = msg.TTL
 		v.model.SetContent(pretty(msg.NewValue))
-
-	default:
-		if !v.active {
-			return v, nil
-		}
-
-		var cmd tea.Cmd
-		v.model, cmd = v.model.Update(msg)
-		return v, cmd
+		return v, nil
 	}
 
-	return v, nil
+	if msg, ok := msg.(tea.KeyMsg); ok {
+		if msg.String() == "enter" {
+			v.Toggle()
+			return v, nil
+		}
+	}
+
+	if !v.active {
+		return v, nil
+	}
+
+	v.model, cmd = v.model.Update(msg)
+	return v, cmd
 }
 
 func ValueTitle(ttl int64) string {
