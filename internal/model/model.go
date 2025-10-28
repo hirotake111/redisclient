@@ -7,7 +7,6 @@ import (
 
 	"github.com/charmbracelet/bubbles/textarea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/hirotake111/redisclient/internal/apperror"
 	"github.com/hirotake111/redisclient/internal/color"
 	"github.com/hirotake111/redisclient/internal/command"
 	"github.com/hirotake111/redisclient/internal/component/list"
@@ -78,10 +77,6 @@ func (m Model) UpdateKeyList(msg command.KeysUpdatedMsg) Model {
 	return m.ReplaceKeys(msg.Keys)
 }
 
-func (m Model) CurrentKey() string {
-	return m.mode.Keys[m.mode.CurrentKeyIdx]
-}
-
 func (m Model) UpdateValue(msg command.ValueUpdatedMsg) Model {
 	m.mode.Value = values.NewValue(msg.NewValue, msg.TTL)
 	return m
@@ -101,46 +96,9 @@ func (m Model) PreviousTab() Model {
 	return m
 }
 
-func (m Model) MoveCursorDown() (Model, error) {
-	if len(m.mode.Keys) == 0 {
-		return m, apperror.CantMoveCursorDownError
-	}
-	if m.mode.CurrentKeyIdx+1 == len(m.mode.Keys) {
-		return m, apperror.CantMoveCursorDownError
-	}
-	m.mode.CurrentKeyIdx++
-	log.Printf("Cursor moved down to index %d", m.mode.CurrentKeyIdx)
-	return m, nil
-}
-
-func (m Model) MoveCursorUp() (Model, error) {
-	if len(m.mode.Keys) == 0 {
-		return m, apperror.CantMoveCursorUpError
-	}
-	if m.mode.CurrentKeyIdx-1 < 0 {
-		return m, apperror.CantMoveCursorUpError
-	}
-	m.mode.CurrentKeyIdx--
-	log.Printf("Cursor moved up to index %d", m.mode.CurrentKeyIdx)
-	return m, nil
-}
-
-func (m Model) currentKey() string {
-	if m.mode.CurrentKeyIdx < 0 || m.mode.CurrentKeyIdx >= len(m.mode.Keys) {
-		return ""
-	}
-	return m.mode.Keys[m.mode.CurrentKeyIdx]
-}
-
 func (m Model) UpdateRedisClient(msg command.NewRedisClientMsg) Model {
 	m.redis = msg.Redis
 	log.Printf("Updating Redis client to %s", m.ConnectionString())
-	return m
-}
-
-func (m Model) ResetKeyIndex() Model {
-	m.mode.CurrentKeyIdx = 0
-	log.Print("Reset key index position to 0")
 	return m
 }
 

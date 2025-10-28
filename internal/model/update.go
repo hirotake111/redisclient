@@ -97,24 +97,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case command.ValueUpdatedMsg:
 			m = m.UpdateValue(msg)
 
-		case command.KeysUpdatedMsg:
-			log.Printf("Received keys updated message. The message has %d keys", len(msg.Keys))
-			m = m.UpdateKeyList(msg)
-			if len(msg.Keys) == 0 {
-				log.Print("No keys found, returning empty value")
-				m.EmptyValue()
-				cmds = append(cmds, command.DisplayEmptyValue)
-				return m, tea.Batch(cmds...)
-			}
-			cmds = append(cmds, command.GetValue(m.ctx, m.redis, m.currentKey())) // Fetch value for the first key
-
-		// case command.KeyDeletedMsg:
-		// 	log.Printf("Received key deleted message for key: %s", msg.Key)
-		// 	m = m.DeleteKeyFromList(msg.Key)
-
 		case command.NewRedisClientMsg:
 			log.Print("Received new Redis client message")
-			m = m.UpdateRedisClient(msg).ResetKeyIndex()
+			m = m.UpdateRedisClient(msg)
 			cmds = append(cmds, command.GetKeys(m.ctx, m.redis, m.mode.FilterForm.Value())) // Re-fetch keys with the new client
 
 		case command.HighlightedKeyUpdatedMsg:
