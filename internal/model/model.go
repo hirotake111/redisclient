@@ -8,8 +8,8 @@ import (
 	"github.com/charmbracelet/bubbles/textarea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/hirotake111/redisclient/internal/apperror"
-	"github.com/hirotake111/redisclient/internal/cmd"
 	"github.com/hirotake111/redisclient/internal/color"
+	"github.com/hirotake111/redisclient/internal/command"
 	"github.com/hirotake111/redisclient/internal/component/list"
 	"github.com/hirotake111/redisclient/internal/mode"
 	"github.com/hirotake111/redisclient/internal/util"
@@ -73,7 +73,7 @@ func (m Model) UpdateWindowSize(height, width int) Model {
 	return m
 }
 
-func (m Model) UpdateKeyList(msg cmd.KeysUpdatedMsg) Model {
+func (m Model) UpdateKeyList(msg command.KeysUpdatedMsg) Model {
 	m.mode.KeyList = list.New(msg.Keys, 30, 20)
 	return m.ReplaceKeys(msg.Keys)
 }
@@ -82,7 +82,7 @@ func (m Model) CurrentKey() string {
 	return m.mode.Keys[m.mode.CurrentKeyIdx]
 }
 
-func (m Model) UpdateValue(msg cmd.ValueUpdatedMsg) Model {
+func (m Model) UpdateValue(msg command.ValueUpdatedMsg) Model {
 	m.mode.Value = values.NewValue(msg.NewValue, msg.TTL)
 	return m
 }
@@ -132,7 +132,7 @@ func (m Model) currentKey() string {
 	return m.mode.Keys[m.mode.CurrentKeyIdx]
 }
 
-func (m Model) UpdateRedisClient(msg cmd.NewRedisClientMsg) Model {
+func (m Model) UpdateRedisClient(msg command.NewRedisClientMsg) Model {
 	m.redis = msg.Redis
 	log.Printf("Updating Redis client to %s", m.ConnectionString())
 	return m

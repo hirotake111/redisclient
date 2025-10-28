@@ -1,4 +1,4 @@
-package cmd
+package command
 
 import (
 	"context"
@@ -150,7 +150,7 @@ func DeleteKey(ctx context.Context, client *redis.Client, key string) tea.Cmd {
 			return ErrMsg{Err: err}
 		}
 		log.Printf("Deleted key \"%s\" successfully", key)
-		return KeyDeletedMsg{Key: key}
+		return KeyDeletedMsg{Key: key, info: "Key deleted successfully"}
 	}
 }
 
@@ -192,4 +192,8 @@ func TickAndClear(duration time.Duration, kind string) tea.Cmd {
 		return TimedOutMsg{Kind: kind}
 	})
 
+}
+
+func UpdateSelectedItemCmd(newKey string) tea.Msg {
+	return HighlightedKeyUpdatedMsg{}
 }

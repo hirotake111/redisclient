@@ -5,11 +5,11 @@ n ?= 1000
 
 .PHONY: build run test clean fake-data
 
-build:
-	go build -o $(BIN_DIR)/$(APP_NAME) ./cmd/tui
-
 run:
 	go run ./cmd/tui
+
+build:
+	go build -o $(BIN_DIR)/$(APP_NAME) ./cmd/tui
 
 test:
 	go test ./...

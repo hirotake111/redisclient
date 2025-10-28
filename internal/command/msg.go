@@ -1,4 +1,4 @@
-package cmd
+package command
 
 import (
 	"github.com/redis/go-redis/v9"
@@ -24,7 +24,12 @@ type NewRedisClientMsg struct {
 }
 
 type KeyDeletedMsg struct {
-	Key string
+	Key  string
+	info string
 }
 
 type CopySuccessMsg struct{}
+
+type HighlightedKeyUpdatedMsg struct {
+	Key string
+}
