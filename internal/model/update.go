@@ -40,14 +40,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil // No action for other timeout kinds
 	}
 
-	if m.mode.KeyList.FilterState() != list.Filtering {
-		m.mode.Viewport, cmd = m.mode.Viewport.Update(msg)
-		cmds = append(cmds, cmd)
-	}
-	if !m.mode.Viewport.IsActive() {
-		m.mode.KeyList, cmd = m.mode.KeyList.Update(m.ctx, m.redis, msg) // Update the key list component
-		cmds = append(cmds, cmd)
-	}
+	m.mode.Viewport, cmd = m.mode.Viewport.Update(msg, m.State)
+	cmds = append(cmds, cmd)
+
+	m.mode.KeyList, cmd = m.mode.KeyList.Update(m.ctx, m.redis, msg, m.State)
+	cmds = append(cmds, cmd)
 
 	// List mode (defalt)
 	switch msg := msg.(type) {

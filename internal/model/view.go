@@ -28,6 +28,7 @@ func (m Model) View() string {
 		height,
 		m.mode.Keys,
 		m.HostName(),
+		m.State,
 	)
 
 	return appShellStyle.Render(

@@ -9,11 +9,17 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/hirotake111/redisclient/internal/color"
 	"github.com/hirotake111/redisclient/internal/command"
+	"github.com/hirotake111/redisclient/internal/state"
 	"github.com/redis/go-redis/v9"
 )
 
 const (
 	empty = "(empty)"
+)
+
+var (
+	defaultContainer = lipgloss.NewStyle().BorderStyle(lipgloss.RoundedBorder()).BorderForeground(color.Primary)
+	activeContainer  = defaultContainer.BorderStyle(lipgloss.ThickBorder())
 )
 
 type CustomKeyList struct {
@@ -49,7 +55,12 @@ func newItems(keys []string, widt, height int) list.Model {
 	return l
 }
 
-func (l CustomKeyList) Update(ctx context.Context, client *redis.Client, msg tea.Msg) (CustomKeyList, tea.Cmd) {
+func (l CustomKeyList) Update(ctx context.Context, client *redis.Client, msg tea.Msg, st state.AppState) (CustomKeyList, tea.Cmd) {
+	log.Printf("CustomKeyList received message: %+v", msg)
+	if !st.ListActive() {
+		return l, nil
+	}
+
 	var cmds []tea.Cmd
 	prv, cur := empty, empty
 	if l.SelectedItem() != nil {
@@ -79,6 +90,14 @@ func (l CustomKeyList) Update(ctx context.Context, client *redis.Client, msg tea
 		return l, command.GetValue(ctx, client, selected.FilterValue())
 	}
 
+	if msg, ok := msg.(tea.KeyMsg); ok {
+		key := msg.String()
+		if key == "enter" && l.FilterState() != list.Filtering {
+			// Send command to activate viewport
+			cmds = append(cmds, state.ActivateViewportCmd)
+		}
+	}
+
 	m, cmd := l.Model.Update(msg)
 	cmds = append(cmds, cmd)
 	log.Printf("Items after update: %+v. Index: %d", m.Items(), m.Index())
@@ -100,9 +119,12 @@ func (l CustomKeyList) Update(ctx context.Context, client *redis.Client, msg tea
 	return l, tea.Batch(cmds...)
 }
 
-func (l *CustomKeyList) View(width, height int) string {
-	style := lipgloss.NewStyle().BorderStyle(lipgloss.RoundedBorder()).BorderForeground(color.Primary).Width(width).Height(height)
+func (l *CustomKeyList) View(width, height int, st state.AppState) string {
 	l.SetWidth(width - 4)
 	l.SetHeight(height)
-	return style.Render(l.Model.View())
+	style := defaultContainer
+	if st.ListActive() {
+		style = activeContainer
+	}
+	return style.Width(width).Height(height).Render(l.Model.View())
 }
