@@ -176,6 +176,7 @@ func CopyValueToClipboard(ctx context.Context, value string) tea.Cmd {
 		}
 		log.Printf("Copying value to clipboard: %s", truncated)
 		// TODO: Implement platform-specific clipboard handling
+		// Currently only supports macOS (pbcopy)
 		command := exec.Command("pbcopy")
 		command.Stdin = strings.NewReader(value)
 		if err := command.Run(); err != nil {
@@ -196,4 +197,17 @@ func TickAndClear(duration time.Duration, kind string) tea.Cmd {
 
 func UpdateSelectedItemCmd(newKey string) tea.Msg {
 	return HighlightedKeyUpdatedMsg{}
+}
+
+func BulkDelete(ctx context.Context, client *redis.Client, keys []string) tea.Cmd {
+	return func() tea.Msg {
+		log.Printf("Bulk deleting %d keys from Redis", len(keys))
+		if err := client.Del(ctx, keys...).Err(); err != nil {
+			return ErrMsg{Err: err}
+		}
+		log.Printf("Bulk deleted %d keys successfully", len(keys))
+
+		// Get new values for refreshing the key list
+		return GetKeys(ctx, client, "")()
+	}
 }

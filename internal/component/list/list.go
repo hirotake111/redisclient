@@ -96,6 +96,27 @@ func (l CustomKeyList) Update(ctx context.Context, client *redis.Client, msg tea
 			// Send command to activate viewport
 			cmds = append(cmds, state.ActivateViewportCmd)
 		}
+
+		if key == "x" {
+			log.Print("key 'x' pressed, deleting current key")
+			currentKey := l.Model.SelectedItem().FilterValue()
+			if currentKey == "" {
+				log.Print("No current key selected for deletion")
+			} else {
+				log.Printf("Deleting key: %s", currentKey)
+				cmds = append(cmds, command.DeleteKey(ctx, client, currentKey))
+			}
+		}
+
+		if key == "X" && l.FilterState() == list.FilterApplied {
+			log.Printf("key \"X\" pressed, perform bulk delete for %d keys", len(l.VisibleItems()))
+			keys := make([]string, 0, len(l.VisibleItems()))
+			for _, it := range l.VisibleItems() {
+				keys = append(keys, it.FilterValue())
+			}
+			cmds = append(cmds, command.BulkDelete(ctx, client, keys))
+		}
+
 	}
 
 	m, cmd := l.Model.Update(msg)

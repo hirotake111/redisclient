@@ -18,25 +18,16 @@ type AppStateTransitionedMsg struct {
 	data data
 }
 
-//	var ViewportActivatedMsg AppStateTransitionedMsg = AppStateTransitionedMsg{
-//		kind: "viewport_activated",
-//		data: ViewportActivated,
-//	}
-var ViewportDeactivatedMsg AppStateTransitionedMsg = AppStateTransitionedMsg{
-	kind: "viewport_activated",
-	data: ViewportDeactivated,
-}
-
 func ActivateViewportCmd() tea.Msg {
 	log.Println("Sending AppStateTransitionedMsg")
 	return AppStateTransitionedMsg{
-		kind: "viewport_activated",
+		kind: string(ViewportActivated),
 		data: ViewportActivated,
 	}
 }
 func DeactivateViewportCmd() tea.Msg {
 	return AppStateTransitionedMsg{
-		kind: "viewport_activated",
+		kind: string(ViewportDeactivated),
 		data: ViewportDeactivated,
 	}
 }
@@ -54,7 +45,6 @@ func NewAppState() AppState {
 }
 
 func (s AppState) Update(msg tea.Msg) (AppState, tea.Cmd) {
-	log.Printf("AppState received message: %+v", msg)
 	m, ok := msg.(AppStateTransitionedMsg)
 	if !ok {
 		return s, nil
@@ -68,7 +58,7 @@ func (s AppState) Update(msg tea.Msg) (AppState, tea.Cmd) {
 		s.listActive = true
 		s.viewportActive = false
 	}
-	log.Printf("Current	AppState: %+v", s)
+
 	return s, nil
 }
 
