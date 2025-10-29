@@ -82,18 +82,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			cmds = append(cmds, command.SwitchTab(m.ctx, m.redis, m.currentTab))
 		}
 
-		if key == "x" {
-			log.Print("key 'x' pressed, deleting current key")
-			// currentKey := m.currentKey()
-			currentKey := m.keyList.Model.SelectedItem().FilterValue()
-			if currentKey == "" {
-				log.Print("No current key selected for deletion")
-			} else {
-				log.Printf("Deleting key: %s", currentKey)
-				cmds = append(cmds, command.DeleteKey(m.ctx, m.redis, currentKey))
-			}
-		}
-
 	case command.NewRedisClientMsg:
 		log.Print("Received new Redis client message")
 		m = m.UpdateRedisClient(msg)
