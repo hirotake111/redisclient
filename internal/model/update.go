@@ -11,7 +11,7 @@ import (
 
 func (m Model) Init() tea.Cmd {
 	log.Print("Initializing model...")
-	return command.GetKeys(m.ctx, m.redis, m.mode.FilterForm.Value())
+	return command.GetKeys(m.ctx, m.redis, "")
 }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -40,10 +40,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil // No action for other timeout kinds
 	}
 
-	m.mode.Viewport, cmd = m.mode.Viewport.Update(msg, m.State)
+	m.viewport, cmd = m.viewport.Update(msg, m.State)
 	cmds = append(cmds, cmd)
 
-	m.mode.KeyList, cmd = m.mode.KeyList.Update(m.ctx, m.redis, msg, m.State)
+	m.keyList, cmd = m.keyList.Update(m.ctx, m.redis, msg, m.State)
 	cmds = append(cmds, cmd)
 
 	// List mode (defalt)
@@ -52,39 +52,40 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		key := msg.String()
 		log.Printf("KEY HIT: \"%s\"", key)
 		if key == tea.KeyEsc.String() || key == tea.KeyCtrlC.String() || key == "q" {
-			if m.mode.KeyList.FilterState() != list.Filtering {
+			if m.keyList.FilterState() != list.Filtering {
 				return m, tea.Quit
 			}
 		}
 
 		if key == "enter" {
-			selected := m.mode.KeyList.SelectedItem().FilterValue()
+			selected := m.keyList.SelectedItem().FilterValue()
 			cmds = append(cmds, command.GetValue(m.ctx, m.redis, selected))
 		}
 
-		if key == "y" {
-			if m.mode.Value.Data() == "" {
-				// No current key to copy
-			} else {
-				log.Print("key 'c' pressed, copying value of current key to clipboard")
-				cmds = append(cmds, command.CopyValueToClipboard(m.ctx, m.mode.Value.Data()))
-			}
-		}
+		// TODO: Copy value to clipboard
+		// if key == "y" {
+		// 	if m.mode.Value.Data() == "" {
+		// 		// No current key to copy
+		// 	} else {
+		// 		log.Print("key 'c' pressed, copying value of current key to clipboard")
+		// 		cmds = append(cmds, command.CopyValueToClipboard(m.ctx, m.mode.Value.Data()))
+		// 	}
+		// }
 
 		if key == tea.KeyTab.String() {
 			m = m.NextTab()
-			cmds = append(cmds, command.SwitchTab(m.ctx, m.redis, m.mode.CurrentTab))
+			cmds = append(cmds, command.SwitchTab(m.ctx, m.redis, m.currentTab))
 		}
 
 		if key == tea.KeyShiftTab.String() {
 			m = m.PreviousTab()
-			cmds = append(cmds, command.SwitchTab(m.ctx, m.redis, m.mode.CurrentTab))
+			cmds = append(cmds, command.SwitchTab(m.ctx, m.redis, m.currentTab))
 		}
 
 		if key == "x" {
 			log.Print("key 'x' pressed, deleting current key")
 			// currentKey := m.currentKey()
-			currentKey := m.mode.KeyList.Model.SelectedItem().FilterValue()
+			currentKey := m.keyList.Model.SelectedItem().FilterValue()
 			if currentKey == "" {
 				log.Print("No current key selected for deletion")
 			} else {
@@ -93,13 +94,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 
-	case command.ValueUpdatedMsg:
-		m = m.UpdateValue(msg)
-
 	case command.NewRedisClientMsg:
 		log.Print("Received new Redis client message")
 		m = m.UpdateRedisClient(msg)
-		cmds = append(cmds, command.GetKeys(m.ctx, m.redis, m.mode.FilterForm.Value())) // Re-fetch keys with the new client
+		cmds = append(cmds, command.GetKeys(m.ctx, m.redis, "")) // Re-fetch keys with the new client
 
 	case command.HighlightedKeyUpdatedMsg:
 		log.Printf("Highlighted key updated to: %s", msg.Key)

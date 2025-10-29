@@ -10,46 +10,44 @@ import (
 	"github.com/hirotake111/redisclient/internal/color"
 	"github.com/hirotake111/redisclient/internal/command"
 	"github.com/hirotake111/redisclient/internal/component/list"
-	"github.com/hirotake111/redisclient/internal/mode"
+	"github.com/hirotake111/redisclient/internal/component/viewport"
 	"github.com/hirotake111/redisclient/internal/state"
-	"github.com/hirotake111/redisclient/internal/util"
-	"github.com/hirotake111/redisclient/internal/values"
 	"github.com/redis/go-redis/v9"
 )
 
 const (
-	defaultTabSize = 16 // Default number of database indexes
+	defaultTabSize        = 16 // Default number of database indexes
+	defaultKeyListWIdth   = 30
+	defaultKeyListHeight  = 20
+	defaultViewportWidth  = 50
+	defaultViewportHeight = 20
 )
 
 type Model struct {
-	ctx    context.Context // Context for app
-	width  int             // Width of the terminal window
-	height int             // Height of the terminal window
-	redis  *redis.Client   // Redis client instance
-	mode   *mode.ListMode  // Application mode/state (moved fields)
-	State  state.AppState  // Application state
+	ctx        context.Context // Context for app
+	width      int             // Width of the terminal window
+	height     int             // Height of the terminal window
+	redis      *redis.Client   // Redis client instance
+	State      state.AppState  // Application state
+	errorMsg   string
+	tabs       int
+	currentTab int // Also an index for Redis database
+	keyList    list.CustomKeyList
+	viewport   viewport.Viewport
 }
 
 func NewModel(ctx context.Context, redis *redis.Client) Model {
-	ff := newCustomForm("FILTER: ", "Filter keys...")
-	uf := newCustomForm("NEW VALUE: ", "Enter new value...")
-
 	return Model{
-		ctx:    ctx,
-		redis:  redis,
-		width:  80, // Default width
-		height: 24, // Default height
-		mode: mode.NewListMode(
-			"",             // ErrorMsg
-			0,              // CurrentKeyIdx
-			[]string{},     // Keys
-			uf,             // UpdateForm
-			ff,             // FilterForm
-			defaultTabSize, // Tabs
-			0,              // CurrentTab
-			values.Value{}, // Value
-		),
-		State: state.NewAppState(),
+		ctx:        ctx,
+		redis:      redis,
+		width:      80,             // Default width
+		height:     24,             // Default height
+		errorMsg:   "",             // ErrorMsg
+		tabs:       defaultTabSize, // Tabs
+		currentTab: 0,              // CurrentTab
+		keyList:    list.New([]string{}, defaultKeyListWIdth, defaultKeyListHeight),
+		viewport:   viewport.New(defaultViewportWidth, defaultViewportHeight),
+		State:      state.NewAppState(),
 	}
 }
 
@@ -70,26 +68,16 @@ func (m Model) UpdateWindowSize(height, width int) Model {
 	return m
 }
 
-func (m Model) UpdateKeyList(msg command.KeysUpdatedMsg) Model {
-	m.mode.KeyList = list.New(msg.Keys, 30, 20)
-	return m.ReplaceKeys(msg.Keys)
-}
-
-func (m Model) UpdateValue(msg command.ValueUpdatedMsg) Model {
-	m.mode.Value = values.NewValue(msg.NewValue, msg.TTL)
-	return m
-}
-
 func (m Model) NextTab() Model {
-	m.mode.CurrentTab = (m.mode.CurrentTab + 1) % m.mode.Tabs
+	m.currentTab = (m.currentTab + 1) % m.tabs
 	return m
 }
 
 func (m Model) PreviousTab() Model {
-	if m.mode.CurrentTab == 0 {
-		m.mode.CurrentTab = m.mode.Tabs - 1 // Wrap around to the last tab
+	if m.currentTab == 0 {
+		m.currentTab = m.tabs - 1 // Wrap around to the last tab
 	} else {
-		m.mode.CurrentTab--
+		m.currentTab--
 	}
 	return m
 }
@@ -100,43 +88,15 @@ func (m Model) UpdateRedisClient(msg command.NewRedisClientMsg) Model {
 	return m
 }
 
-func (m Model) DeleteKeyFromList(key string) Model {
-	log.Printf("Deleting key %s from current key list", key)
-	if len(m.mode.Keys) == 0 {
-		log.Print("No keys available to delete - skip deletion")
-		return m
-	}
-
-	if key == "" {
-		log.Print("Empty key provided for deletion - ignoring")
-		return m
-	}
-
-	m.mode.Keys = util.Filter(m.mode.Keys, func(k string) bool { return k != key })
-	return m
-}
-
-func (m Model) EmptyValue() Model {
-	log.Print("Clearing value")
-	m.mode.Value = values.Value{}
-	return m
-}
-
 func (m Model) UpdateErrorMessage(err error) Model {
 	log.Println("Updating error message")
-	m.mode.ErrorMsg = err.Error()
+	m.errorMsg = err.Error()
 	return m
 }
 
 func (m Model) ClearErrorMessage() Model {
 	log.Print("Clearing error message")
-	m.mode.ErrorMsg = ""
-	return m
-}
-
-func (m Model) ReplaceKeys(keys []string) Model {
-	log.Printf("Replacing key list with %d new keys", len(keys))
-	m.mode.Keys = keys
+	m.errorMsg = ""
 	return m
 }
 

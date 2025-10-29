@@ -31,16 +31,16 @@ func (m Model) View() string {
 	helpBox := helpBoxStyle.Render(helpbox.New(helpBoxHeight))
 
 	// Database tab
-	tab := component.TabRow(m.mode.Tabs, m.mode.CurrentTab)
+	tab := component.TabRow(m.tabs, m.currentTab)
 
 	// Message box
-	msgbox := component.ErrorBox(m.mode.ErrorMsg, widthRightPane, heightErrorBox)
+	msgbox := component.ErrorBox(m.errorMsg, widthRightPane, heightErrorBox)
 
 	// Key list
-	left := m.mode.KeyList.View(widthLeftPane, heightLeftPane, m.State)
+	left := m.keyList.View(widthLeftPane, heightLeftPane, m.State)
 
 	// Viewport
-	viewport := m.mode.Viewport.View(widthRightPane, heightValueDisplay, m.State)
+	viewport := m.viewport.View(widthRightPane, heightValueDisplay, m.State)
 
 	// Connection display
 	bottom := component.HostHeader(m.HostName())
