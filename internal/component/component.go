@@ -41,13 +41,14 @@ var (
 	helpMessages = []string{
 		"j or ↓: down",
 		"k or ↑: up",
-		"Enter: update current value",
-		"d: delete key",
+		"h or ←: previous page",
+		"l or →: next page",
 		"/: filter keys",
-		"n: next page",
-		"p: previous page",
-		"q/Esc: quit",
+		"x: delete key",
+		"X: bulk delete filterred keys",
+		"q/ESC/CTRL+c: quit",
 	}
+
 	helpTextStyle = lipgloss.NewStyle().
 			MarginRight(8).
 			Foreground(color.Primary)

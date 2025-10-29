@@ -5,10 +5,8 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/charmbracelet/bubbles/textarea"
-	"github.com/charmbracelet/lipgloss"
-	"github.com/hirotake111/redisclient/internal/color"
 	"github.com/hirotake111/redisclient/internal/command"
+	"github.com/hirotake111/redisclient/internal/component/infobox"
 	"github.com/hirotake111/redisclient/internal/component/list"
 	"github.com/hirotake111/redisclient/internal/component/viewport"
 	"github.com/hirotake111/redisclient/internal/state"
@@ -34,6 +32,7 @@ type Model struct {
 	currentTab int // Also an index for Redis database
 	keyList    list.CustomKeyList
 	viewport   viewport.Viewport
+	infoBox    infobox.InfoBox
 }
 
 func NewModel(ctx context.Context, redis *redis.Client) Model {
@@ -47,6 +46,7 @@ func NewModel(ctx context.Context, redis *redis.Client) Model {
 		currentTab: 0,              // CurrentTab
 		keyList:    list.New([]string{}, defaultKeyListWIdth, defaultKeyListHeight),
 		viewport:   viewport.New(defaultViewportWidth, defaultViewportHeight),
+		infoBox:    infobox.New(),
 		State:      state.NewAppState(),
 	}
 }
@@ -98,19 +98,4 @@ func (m Model) ClearErrorMessage() Model {
 	log.Print("Clearing error message")
 	m.errorMsg = ""
 	return m
-}
-
-func newCustomForm(prompt, placeholder string) *textarea.Model {
-	ff := textarea.New()
-	ff.Prompt = prompt
-	ff.Placeholder = placeholder
-	ff.SetHeight(1)
-	ff.SetWidth(100)
-	ff.CharLimit = 100
-	ff.KeyMap.InsertNewline.SetEnabled(false) // Disable newline insertion
-	ff.BlurredStyle.Base = ff.BlurredStyle.Base.Border(lipgloss.RoundedBorder()).BorderForeground(color.Grey)
-	ff.FocusedStyle.Base = ff.FocusedStyle.Base.Border(lipgloss.RoundedBorder()).BorderForeground(color.Primary)
-	ff.ShowLineNumbers = false
-	ff.Blur()
-	return &ff
 }

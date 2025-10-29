@@ -20,6 +20,12 @@ var (
 	// Error
 	Error = lipgloss.Color("#D86B6B")
 
+	// Warning
+	Warning = lipgloss.Color("#E6A23C")
+
 	// Neutral grey
 	Grey = lipgloss.Color("#9CA3AF")
+
+	// Black
+	Black = lipgloss.Color("#1A1A1A")
 )

@@ -34,7 +34,8 @@ func (m Model) View() string {
 	tab := component.TabRow(m.tabs, m.currentTab)
 
 	// Message box
-	msgbox := component.ErrorBox(m.errorMsg, widthRightPane, heightErrorBox)
+	// msgbox := component.ErrorBox(m.errorMsg, widthRightPane, heightErrorBox)
+	infoBox := m.infoBox.View(widthRightPane, heightErrorBox)
 
 	// Key list
 	left := m.keyList.View(widthLeftPane, heightLeftPane, m.State)
@@ -46,7 +47,7 @@ func (m Model) View() string {
 	bottom := component.HostHeader(m.HostName())
 
 	// Right pane
-	right := lipgloss.JoinVertical(lipgloss.Top, viewport, msgbox)
+	right := lipgloss.JoinVertical(lipgloss.Top, viewport, infoBox)
 
 	middle := lipgloss.JoinHorizontal(lipgloss.Top, left, right)
 
