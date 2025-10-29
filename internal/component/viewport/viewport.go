@@ -2,6 +2,7 @@ package viewport
 
 import (
 	"fmt"
+	"log"
 	"strconv"
 	"strings"
 
@@ -10,6 +11,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/hirotake111/redisclient/internal/color"
 	"github.com/hirotake111/redisclient/internal/command"
+	"github.com/hirotake111/redisclient/internal/state"
 )
 
 var (
@@ -25,56 +27,44 @@ var (
 )
 
 type Viewport struct {
-	model  viewport.Model
-	ttl    int64
-	active bool
+	model viewport.Model
+	ttl   int64
 }
 
 func New(width, height int) Viewport {
 	return Viewport{
-		model:  viewport.New(width, height),
-		ttl:    0,
-		active: false,
+		model: viewport.New(width, height),
+		ttl:   0,
 	}
 }
 
-func (v *Viewport) Toggle() {
-	v.active = !v.active
-}
-
-func (v Viewport) IsActive() bool {
-	return v.active
-}
-
-func (v Viewport) View(width, height int) string {
+func (v Viewport) View(width, height int, st state.AppState) string {
 	v.model.Width = width - 2
 	v.model.Height = height - 2
 	title := ValueTitle(v.ttl)
 	container := defaultContainer
-	if v.IsActive() {
+	if st.ViewportActive() {
 		container = activeContainer
 	}
 	return container.Render(lipgloss.JoinVertical(lipgloss.Left, title, v.model.View()))
 }
 
-func (v Viewport) Update(msg tea.Msg) (Viewport, tea.Cmd) {
-	// log.Printf("Viewport received message: %+v", msg)
+func (v Viewport) Update(msg tea.Msg, st state.AppState) (Viewport, tea.Cmd) {
 	var cmd tea.Cmd
 	if msg, ok := msg.(command.ValueUpdatedMsg); ok {
 		v.ttl = msg.TTL
 		v.model.SetContent(pretty(msg.NewValue))
 		return v, nil
 	}
+	log.Printf("viewport active: %t", st.ViewportActive())
+	if !st.ViewportActive() {
+		return v, nil
+	}
 
 	if msg, ok := msg.(tea.KeyMsg); ok {
 		if msg.String() == "enter" {
-			v.Toggle()
-			return v, nil
+			return v, state.DeactivateViewportCmd
 		}
-	}
-
-	if !v.active {
-		return v, nil
 	}
 
 	v.model, cmd = v.model.Update(msg)
