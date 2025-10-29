@@ -4,6 +4,10 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
+type MsgWithKind interface {
+	Kind() string
+}
+
 type ErrMsg struct{ Err error }
 
 type TimedOutMsg struct {

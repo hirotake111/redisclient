@@ -10,6 +10,7 @@ import (
 	"github.com/hirotake111/redisclient/internal/color"
 	"github.com/hirotake111/redisclient/internal/command"
 	"github.com/hirotake111/redisclient/internal/state"
+	"github.com/hirotake111/redisclient/internal/util"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -56,7 +57,8 @@ func newItems(keys []string, widt, height int) list.Model {
 }
 
 func (l CustomKeyList) Update(ctx context.Context, client *redis.Client, msg tea.Msg, st state.AppState) (CustomKeyList, tea.Cmd) {
-	log.Printf("CustomKeyList received message: %+v", msg)
+	util.LogMsg("CustomKeyList received a message", msg)
+
 	if !st.ListActive() {
 		return l, nil
 	}
