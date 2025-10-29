@@ -11,16 +11,14 @@ import (
 	"github.com/hirotake111/redisclient/internal/command"
 	"github.com/hirotake111/redisclient/internal/component/list"
 	"github.com/hirotake111/redisclient/internal/mode"
+	"github.com/hirotake111/redisclient/internal/state"
 	"github.com/hirotake111/redisclient/internal/util"
 	"github.com/hirotake111/redisclient/internal/values"
 	"github.com/redis/go-redis/v9"
 )
 
-type State string
-
 const (
-	defaultTabSize       = 16 // Default number of database indexes
-	ListState      State = "list"
+	defaultTabSize = 16 // Default number of database indexes
 )
 
 type Model struct {
@@ -29,7 +27,7 @@ type Model struct {
 	height int             // Height of the terminal window
 	redis  *redis.Client   // Redis client instance
 	mode   *mode.ListMode  // Application mode/state (moved fields)
-	State  State           // Application state (moved from ListMode)
+	State  state.AppState  // Application state
 }
 
 func NewModel(ctx context.Context, redis *redis.Client) Model {
@@ -51,7 +49,7 @@ func NewModel(ctx context.Context, redis *redis.Client) Model {
 			0,              // CurrentTab
 			values.Value{}, // Value
 		),
-		State: ListState,
+		State: state.NewAppState(),
 	}
 }
 
@@ -115,12 +113,6 @@ func (m Model) DeleteKeyFromList(key string) Model {
 	}
 
 	m.mode.Keys = util.Filter(m.mode.Keys, func(k string) bool { return k != key })
-	return m
-}
-
-func (m Model) ToListState() Model {
-	log.Print("Switching to list state")
-	m.State = ListState
 	return m
 }
 

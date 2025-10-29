@@ -1,8 +1,6 @@
 package model
 
 import (
-	"fmt"
-
 	"github.com/charmbracelet/lipgloss"
 	"github.com/hirotake111/redisclient/internal/component/helpbox"
 	"github.com/hirotake111/redisclient/internal/keylist"
@@ -24,23 +22,18 @@ func (m Model) View() string {
 	height := m.height - appShellPadding*2 - helpBoxHeight - helpBoxPaddingTop
 	helpBox := helpbox.New(helpBoxHeight)
 
-	switch m.State {
-	case ListState:
-		app := keylist.Render(
-			m.mode,
-			width,
-			height,
-			m.mode.Keys,
-			m.HostName(),
-		)
-		return appShellStyle.Render(
-			lipgloss.JoinVertical(lipgloss.Top,
-				app,
-				helpBoxStyle.Render(helpBox),
-			),
-		)
-		// return app
-	}
+	app := keylist.Render(
+		m.mode,
+		width,
+		height,
+		m.mode.Keys,
+		m.HostName(),
+	)
 
-	return fmt.Sprintf("Unknown state: %s", m.State)
+	return appShellStyle.Render(
+		lipgloss.JoinVertical(lipgloss.Top,
+			app,
+			helpBoxStyle.Render(helpBox),
+		),
+	)
 }
