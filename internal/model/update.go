@@ -19,18 +19,18 @@ func (m Model) Init() tea.Cmd {
 
 	id, err := infoid.New()
 	if err != nil {
-		return command.SendInfoMsgCmd(command.InfoTypeError{
-			Text:      "Failed to generate unique ID for info message.",
-			InfoId:    "conn_success_no_id",
-			ExpiresIn: expiration,
-		})
+		return func() tea.Msg {
+			return command.NewErrorMsg("unknown", err, expiration)
+		}
 	}
 
-	cmd := command.SendInfoMsgCmd(command.InfoTypeInfo{
-		Text:      "Connected to Redis successfully.",
-		InfoId:    id,
-		ExpiresIn: expiration,
-	})
+	cmd := func() tea.Msg {
+		return command.NewInfoMsg(
+			id,
+			"Connected to Redis successfully.",
+			expiration,
+		)
+	}
 	return tea.Batch(command.GetKeys(m.ctx, m.redis, ""), cmd)
 }
 
@@ -47,11 +47,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if cmd != nil {
 		cmds = append(cmds, cmd)
 		return m, tea.Batch(cmds...)
-	}
-
-	if err, ok := msg.(command.ErrMsg); ok {
-		log.Printf("Received error message: %s", err.Err)
-		return m.UpdateErrorMessage(err.Err), command.TickAndClear(5*time.Second, "error")
 	}
 
 	if msg, ok := msg.(tea.WindowSizeMsg); ok {

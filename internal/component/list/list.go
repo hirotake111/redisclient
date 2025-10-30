@@ -123,7 +123,7 @@ func (l CustomKeyList) Update(ctx context.Context, client *redis.Client, msg tea
 
 	m, cmd := l.Model.Update(msg)
 	cmds = append(cmds, cmd)
-	log.Printf("Items after update: %+v. Index: %d", m.Items(), m.Index())
+	log.Printf("%d items after update. Index: %d", len(m.Items()), m.Index())
 	selectedItem := m.SelectedItem()
 	log.Printf("Selected items after update: %+v. Index: %d, global index: %d", selectedItem, m.Index(), m.GlobalIndex())
 	log.Printf("visible: %d", len(m.VisibleItems()))

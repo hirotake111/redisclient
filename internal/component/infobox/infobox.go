@@ -117,7 +117,7 @@ func (i InfoBox) View(width, height int) string {
 	case command.InfoTypeError:
 		container = container.BorderForeground(color.Error).Foreground(color.Error)
 		title = ErrorTitle()
-		text = it.Text
+		text = it.Err.Error()
 
 	default:
 		// No info to show
