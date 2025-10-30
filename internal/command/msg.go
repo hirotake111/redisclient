@@ -16,6 +16,10 @@ type KeysUpdatedMsg struct {
 	Keys []string
 }
 
+func (KeysUpdatedMsg) Kind() string {
+	return "keys_updated"
+}
+
 type ValueUpdatedMsg struct {
 	NewValue string // The new value for the key
 	TTL      int64  // Time to live for the key, if applicable

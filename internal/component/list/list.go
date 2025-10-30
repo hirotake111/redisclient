@@ -75,6 +75,7 @@ func (l CustomKeyList) Update(ctx context.Context, client *redis.Client, msg tea
 		l.Model.RemoveItem(l.GlobalIndex())
 		log.Printf("Removed  selected item \"%s\". items(length: %d)", selected, len(l.Model.Items()))
 		if l.FilterState() == list.FilterApplied {
+			// Manually re-apply filter to update visible items
 			si := l.Index()
 			l.SetFilterText(l.FilterValue())
 			l.Select(si)
@@ -88,8 +89,11 @@ func (l CustomKeyList) Update(ctx context.Context, client *redis.Client, msg tea
 	if msg, ok := msg.(command.KeysUpdatedMsg); ok {
 		items := newItems(msg.Keys, l.Width(), l.Height())
 		l.Model = items
-		selected := l.SelectedItem()
-		return l, command.GetValue(ctx, client, selected.FilterValue())
+		l.Model.ResetSelected()
+		if selected := l.SelectedItem(); selected != nil {
+			return l, command.GetValue(ctx, client, selected.FilterValue())
+		}
+		return l, nil
 	}
 
 	if msg, ok := msg.(tea.KeyMsg); ok {
