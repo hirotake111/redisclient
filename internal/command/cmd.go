@@ -10,6 +10,7 @@ import (
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/hirotake111/redisclient/internal/domain/infoid"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -18,15 +19,32 @@ func DisplayEmptyValue() tea.Msg {
 }
 
 func GetKeys(ctx context.Context, redis *redis.Client, pattern string) tea.Cmd {
+	const exp = 5 * time.Second
 	return func() tea.Msg {
 		if pattern == "" {
 			pattern = "*"
 		}
 
+		id, err := infoid.New()
+		if err != nil {
+			return InfoMsg{
+				InfoType: InfoTypeError{
+					Text:      err.Error(),
+					InfoId:    "unknown",
+					ExpiresIn: exp,
+				},
+			}
+		}
+
 		log.Printf("Fetching keys from Redis with pattern \"%s\", db: %d", pattern, redis.Options().DB)
 		keys, err := redis.Keys(ctx, pattern).Result()
 		if err != nil {
-			return ErrMsg{Err: err}
+			return InfoMsg{
+				InfoType: InfoTypeError{
+					Text:   err.Error(),
+					InfoId: id,
+				},
+			}
 		}
 		log.Printf("Fetched %d keys from Redis(DB: %d)", len(keys), redis.Options().DB)
 
