@@ -7,7 +7,7 @@ import (
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/hirotake111/redisclient/internal/command"
-	"github.com/hirotake111/redisclient/internal/util"
+	"github.com/hirotake111/redisclient/internal/domain/infoid"
 )
 
 const (
@@ -17,25 +17,21 @@ const (
 func (m Model) Init() tea.Cmd {
 	log.Print("Initializing model...")
 
-	var it command.InfoType
-	if id, err := util.NewID(); err == nil {
-		it = command.InfoTypeInfo{
-			Text:      "Connected to Redis successfully.",
-			InfoId:    id,
-			ExpiresIn: expiration,
-		}
-	} else {
-		it = command.InfoTypeError{
-			Text:      "Failed to generate unique ID for info message.",
-			InfoId:    "conn_success_no_id",
-			ExpiresIn: expiration,
+	id, err := infoid.New()
+	if err != nil {
+		return func() tea.Msg {
+			return command.NewErrorMsg("unknown", err, expiration)
 		}
 	}
 
-	return tea.Batch(
-		command.GetKeys(m.ctx, m.redis, ""),
-		command.SendInfoMsgCmd(it),
-	)
+	cmd := func() tea.Msg {
+		return command.NewInfoMsg(
+			id,
+			"Connected to Redis successfully.",
+			expiration,
+		)
+	}
+	return tea.Batch(command.GetKeys(m.ctx, m.redis, ""), cmd)
 }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -51,11 +47,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if cmd != nil {
 		cmds = append(cmds, cmd)
 		return m, tea.Batch(cmds...)
-	}
-
-	if err, ok := msg.(command.ErrMsg); ok {
-		log.Printf("Received error message: %s", err.Err)
-		return m.UpdateErrorMessage(err.Err), command.TickAndClear(5*time.Second, "error")
 	}
 
 	if msg, ok := msg.(tea.WindowSizeMsg); ok {

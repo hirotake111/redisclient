@@ -8,14 +8,16 @@ type MsgWithKind interface {
 	Kind() string
 }
 
-type ErrMsg struct{ Err error }
-
 type TimedOutMsg struct {
 	Kind string // Type of timeout, e.g., "network", "error", "redis", etc.
 }
 
 type KeysUpdatedMsg struct {
 	Keys []string
+}
+
+func (KeysUpdatedMsg) Kind() string {
+	return "keys_updated"
 }
 
 type ValueUpdatedMsg struct {

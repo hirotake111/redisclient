@@ -37,7 +37,7 @@ func (i InfoTypeWarning) Expires() time.Duration { return i.ExpiresIn }
 
 // Error info type
 type InfoTypeError struct {
-	Text      string        // The error message text
+	Err       error         // Error
 	InfoId    string        // Unique identifier for the message
 	ExpiresIn time.Duration // Duration after which the message expires
 }
@@ -53,11 +53,29 @@ func (InfoMsg) Kind() string {
 	return "info"
 }
 
-// SendInfoMsgCmd creates a command that sends an InfoMsg with the given InfoType.
-func SendInfoMsgCmd(infoType InfoType) tea.Cmd {
-	return func() tea.Msg {
-		return InfoMsg{InfoType: infoType}
-	}
+// NewInfoMsg creates a command that sends an InfoMsg with the given InfoType.
+func NewInfoMsg(id, text string, expiresIn time.Duration) tea.Msg {
+	return InfoMsg{InfoType: InfoTypeInfo{
+		Text:      text,
+		InfoId:    id,
+		ExpiresIn: expiresIn,
+	}}
+}
+
+func NewWarningMsg(id, text string, expiresIn time.Duration) tea.Msg {
+	return InfoMsg{InfoType: InfoTypeWarning{
+		Text:      text,
+		InfoId:    id,
+		ExpiresIn: expiresIn,
+	}}
+}
+
+func NewErrorMsg(id string, err error, expiresIn time.Duration) tea.Msg {
+	return InfoMsg{InfoType: InfoTypeError{
+		Err:       err,
+		InfoId:    id,
+		ExpiresIn: expiresIn,
+	}}
 }
 
 type InfoExpiredMsg struct {
