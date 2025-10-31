@@ -98,12 +98,12 @@ func (l CustomKeyList) Update(ctx context.Context, client *redis.Client, msg tea
 
 	if msg, ok := msg.(tea.KeyMsg); ok {
 		key := msg.String()
-		if key == "enter" && l.FilterState() != list.Filtering {
+		switch {
+		case key == "enter" && l.FilterState() != list.Filtering:
 			// Send command to activate viewport
 			cmds = append(cmds, state.ActivateViewportCmd)
-		}
 
-		if key == "x" {
+		case key == "x":
 			log.Print("key 'x' pressed, deleting current key")
 			currentKey := l.Model.SelectedItem().FilterValue()
 			if currentKey == "" {
@@ -112,17 +112,19 @@ func (l CustomKeyList) Update(ctx context.Context, client *redis.Client, msg tea
 				log.Printf("Deleting key: %s", currentKey)
 				cmds = append(cmds, command.DeleteKey(ctx, client, currentKey))
 			}
-		}
 
-		if key == "X" && l.FilterState() == list.FilterApplied {
-			log.Printf("key \"X\" pressed, perform bulk delete for %d keys", len(l.VisibleItems()))
+		case key == "X":
+			log.Printf("key 'X' pressed, perform bulk delete for %d keys", len(l.VisibleItems()))
 			keys := make([]string, 0, len(l.VisibleItems()))
 			for _, it := range l.VisibleItems() {
 				keys = append(keys, it.FilterValue())
 			}
 			cmds = append(cmds, command.BulkDelete(ctx, client, keys))
-		}
 
+		case key == "r":
+			log.Print("key 'r' pressed, refreshing key list")
+			cmds = append(cmds, command.GetKeys(ctx, client, ""))
+		}
 	}
 
 	m, cmd := l.Model.Update(msg)
