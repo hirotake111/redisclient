@@ -1,6 +1,7 @@
 package infobox
 
 import (
+	"fmt"
 	"log"
 	"time"
 
@@ -8,6 +9,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/hirotake111/redisclient/internal/color"
 	"github.com/hirotake111/redisclient/internal/command"
+	"github.com/hirotake111/redisclient/internal/domain/infoid"
 	"github.com/hirotake111/redisclient/internal/util"
 )
 
@@ -70,33 +72,54 @@ func (i InfoBox) Update(msg tea.Msg) (InfoBox, tea.Cmd) {
 		return i, nil
 	}
 
-	m, ok := msg.(command.InfoMsg)
-	if !ok {
+	if m, ok := msg.(command.KeysUpdatedMsg); ok {
+		log.Printf("InfoBox received KeysUpdatedMsg with %d keys", len(m.Keys))
+		id, err := infoid.New()
+		if err != nil {
+			log.Printf("Error generating info ID: %v", err)
+			i.infoType = command.InfoTypeError{
+				InfoId:    "unknown",
+				Err:       err,
+				ExpiresIn: 5 * time.Second,
+			}
+			return i, nil
+		}
+		i.infoType = command.InfoTypeInfo{
+			InfoId:    id,
+			Text:      fmt.Sprintf("Fetched %d keys from Redis.", len(m.Keys)),
+			ExpiresIn: 5 * time.Second,
+		}
 		return i, nil
 	}
 
-	i.infoType = m.InfoType
+	if m, ok := msg.(command.InfoMsg); ok {
+		log.Printf("InfoBox sending expiration command for InfoType: %+v", m.InfoType.Type())
+		i.infoType = m.InfoType
+		var id string
+		var expiresIn time.Duration
 
-	log.Printf("InfoBox sending expiration command for InfoType: %+v", m.InfoType.Type())
-	return i, func() tea.Msg {
 		switch it := m.InfoType.(type) {
 		case command.InfoTypeInfo:
-			log.Printf("Message %s will expire in %s", it.InfoId, it.ExpiresIn.String())
-			time.Sleep(it.ExpiresIn)
-			log.Printf("Message %s expired", it.InfoId)
-			return command.InfoExpiredMsg{Id: it.InfoId}
+			id = it.InfoId
+			expiresIn = it.ExpiresIn
 		case command.InfoTypeWarning:
-			log.Printf("Message %s will expire in %s", it.InfoId, it.ExpiresIn.String())
-			time.Sleep(it.ExpiresIn)
-			return command.InfoExpiredMsg{Id: it.InfoId}
+			id = it.InfoId
+			expiresIn = it.ExpiresIn
 		case command.InfoTypeError:
-			log.Printf("Message %s will expire in %s", it.InfoId, it.ExpiresIn.String())
-			time.Sleep(it.ExpiresIn)
-			return command.InfoExpiredMsg{Id: it.InfoId}
+			id = it.InfoId
+			expiresIn = it.ExpiresIn
 		default: // None
-			return nil
+			return i, nil
+		}
+
+		return i, func() tea.Msg {
+			log.Printf("Message %s will expire in %s", id, expiresIn.String())
+			time.Sleep(expiresIn)
+			return command.InfoExpiredMsg{Id: id}
 		}
 	}
+
+	return i, nil
 }
 
 func (i InfoBox) View(width, height int) string {

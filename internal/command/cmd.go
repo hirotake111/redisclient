@@ -24,23 +24,26 @@ func DisplayEmptyValue() tea.Msg {
 
 func GetKeys(ctx context.Context, redis *redis.Client, pattern string) tea.Cmd {
 	const exp = 5 * time.Second
-	return func() tea.Msg {
-		if pattern == "" {
-			pattern = "*"
-		}
 
-		id, err := infoid.New()
-		if err != nil {
+	if pattern == "" {
+		pattern = "*"
+	}
+
+	id, err := infoid.New()
+	if err != nil {
+		return func() tea.Msg {
 			return NewErrorMsg("unknown", err, exp)
 		}
+	}
 
+	return func() tea.Msg {
 		log.Printf("Fetching keys from Redis with pattern \"%s\", db: %d", pattern, redis.Options().DB)
 		keys, err := redis.Keys(ctx, pattern).Result()
 		if err != nil {
 			return NewErrorMsg(id, err, exp)
 		}
-		log.Printf("Fetched %d keys from Redis(DB: %d)", len(keys), redis.Options().DB)
 
+		log.Printf("Fetched %d keys from Redis(DB: %d)", len(keys), redis.Options().DB)
 		return KeysUpdatedMsg{Keys: keys}
 	}
 }
