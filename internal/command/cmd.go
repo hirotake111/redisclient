@@ -50,6 +50,7 @@ func GetKeys(ctx context.Context, redis *redis.Client, pattern string) tea.Cmd {
 
 func GetValue(ctx context.Context, redis *redis.Client, key string) tea.Cmd {
 	return func() tea.Msg {
+		log.Printf("Fetching value for key '%s' from Redis", key)
 		id, err := infoid.New()
 		if err != nil {
 			log.Printf("Error generating info ID: %v", err)

@@ -79,11 +79,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 
-		if key == "enter" {
-			selected := m.keyList.SelectedItem().FilterValue()
-			cmds = append(cmds, command.GetValue(m.ctx, m.redis, selected))
-		}
-
 		// TODO: Copy value to clipboard
 		// if key == "y" {
 		// 	if m.mode.Value.Data() == "" {
