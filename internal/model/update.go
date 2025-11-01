@@ -79,16 +79,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 
-		// TODO: Copy value to clipboard
-		// if key == "y" {
-		// 	if m.mode.Value.Data() == "" {
-		// 		// No current key to copy
-		// 	} else {
-		// 		log.Print("key 'c' pressed, copying value of current key to clipboard")
-		// 		cmds = append(cmds, command.CopyValueToClipboard(m.ctx, m.mode.Value.Data()))
-		// 	}
-		// }
-
 		if key == tea.KeyTab.String() {
 			m = m.NextTab()
 			cmds = append(cmds, command.SwitchTab(m.ctx, m.redis, m.currentTab))

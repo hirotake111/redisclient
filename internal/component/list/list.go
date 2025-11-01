@@ -97,6 +97,10 @@ func (l CustomKeyList) Update(ctx context.Context, client *redis.Client, msg tea
 		case key == "r":
 			log.Print("key 'r' pressed, refreshing key list")
 			cmds = append(cmds, command.GetKeys(ctx, client, ""))
+
+		case key == "y":
+			log.Print("key 'y' pressed, copying current key to clipboard")
+			cmds = append(cmds, command.CopyValueToClipboard(ctx, l.SelectedItem().FilterValue()))
 		}
 	}
 

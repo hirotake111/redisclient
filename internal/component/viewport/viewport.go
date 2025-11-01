@@ -1,6 +1,7 @@
 package viewport
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"strconv"
@@ -29,12 +30,14 @@ var (
 type Viewport struct {
 	model viewport.Model
 	ttl   int64
+	value string
 }
 
 func New(width, height int) Viewport {
 	return Viewport{
 		model: viewport.New(width, height),
 		ttl:   0,
+		value: "",
 	}
 }
 
@@ -54,16 +57,22 @@ func (v Viewport) Update(msg tea.Msg, st state.AppState) (Viewport, tea.Cmd) {
 	if msg, ok := msg.(command.ValueUpdatedMsg); ok {
 		v.ttl = msg.TTL
 		v.model.SetContent(pretty(msg.NewValue))
+		v.value = msg.NewValue
 		return v, nil
 	}
-	log.Printf("viewport active: %t", st.ViewportActive())
+
 	if !st.ViewportActive() {
 		return v, nil
 	}
 
+	log.Print("Viewport is active, processing message...")
 	if msg, ok := msg.(tea.KeyMsg); ok {
-		if msg.String() == "enter" {
+		switch msg.String() {
+		case "enter":
 			return v, state.DeactivateViewportCmd
+
+		case "y":
+			return v, command.CopyValueToClipboard(context.Background(), v.value)
 		}
 	}
 

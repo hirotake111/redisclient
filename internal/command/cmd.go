@@ -211,6 +211,13 @@ func SwitchTab(ctx context.Context, client *redis.Client, tab int) tea.Cmd {
 }
 
 func CopyValueToClipboard(ctx context.Context, value string) tea.Cmd {
+	id, err := infoid.New()
+	if err != nil {
+		return func() tea.Msg {
+			return NewErrorMsg("unknown", err, expiration)
+		}
+	}
+
 	return func() tea.Msg {
 		var truncated = value
 		if len(value) > 10 {
@@ -221,16 +228,13 @@ func CopyValueToClipboard(ctx context.Context, value string) tea.Cmd {
 		// Currently only supports macOS (pbcopy)
 		command := exec.Command("pbcopy")
 		command.Stdin = strings.NewReader(value)
-		id, err := infoid.New()
-		if err != nil {
-			return NewErrorMsg("unknown", err, expiration)
-		}
-
 		if err := command.Run(); err != nil {
 			return NewErrorMsg(id, fmt.Errorf("failed to copy value to clipboard: %w", err), expiration)
 		}
+
 		log.Print("Value copied to clipboard successfully")
-		return CopySuccessMsg{}
+		txt := fmt.Sprintf("Copied value to clipboard: '%s'", truncated)
+		return NewInfoMsg(id, txt, expiration)
 	}
 }
 
