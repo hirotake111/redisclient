@@ -10,7 +10,6 @@ import (
 	"github.com/hirotake111/redisclient/internal/color"
 	"github.com/hirotake111/redisclient/internal/command"
 	"github.com/hirotake111/redisclient/internal/state"
-	"github.com/hirotake111/redisclient/internal/util"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -57,39 +56,24 @@ func newItems(keys []string, widt, height int) list.Model {
 }
 
 func (l CustomKeyList) Update(ctx context.Context, client *redis.Client, msg tea.Msg, st state.AppState) (CustomKeyList, tea.Cmd) {
-	util.LogMsg("CustomKeyList received a message", msg)
-
 	if !st.ListActive() {
 		return l, nil
 	}
 
 	var cmds []tea.Cmd
-	prv, cur := empty, empty
+	prv := empty
 	if l.SelectedItem() != nil {
-		prv = l.Model.SelectedItem().FilterValue()
+		prv = l.SelectedItem().FilterValue()
 	}
 
 	if _, ok := msg.(command.KeyDeletedMsg); ok {
-		selected := l.Model.SelectedItem().FilterValue()
-		log.Printf("Removing selected item \"%s\" at index %d. items(length: %d)", selected, l.GlobalIndex(), len(l.Model.Items()))
-		l.Model.RemoveItem(l.GlobalIndex())
-		log.Printf("Removed  selected item \"%s\". items(length: %d)", selected, len(l.Model.Items()))
-		if l.FilterState() == list.FilterApplied {
-			// Manually re-apply filter to update visible items
-			si := l.Index()
-			l.SetFilterText(l.FilterValue())
-			l.Select(si)
-			if len(l.VisibleItems()) == 0 {
-				log.Println("Clear filter text as no items are visible after deletion")
-				l.SetFilterState(list.Unfiltered)
-			}
-		}
+		l.removeKeyFromList()
 	}
 
 	if msg, ok := msg.(command.KeysUpdatedMsg); ok {
 		items := newItems(msg.Keys, l.Width(), l.Height())
 		l.Model = items
-		l.Model.ResetSelected()
+		l.ResetSelected()
 		if selected := l.SelectedItem(); selected != nil {
 			return l, command.GetValue(ctx, client, selected.FilterValue())
 		}
@@ -97,54 +81,39 @@ func (l CustomKeyList) Update(ctx context.Context, client *redis.Client, msg tea
 	}
 
 	if msg, ok := msg.(tea.KeyMsg); ok {
+		log.Println("Processing key message in CustomKeyList")
 		key := msg.String()
 		switch {
 		case key == "enter" && l.FilterState() != list.Filtering:
-			// Send command to activate viewport
+			log.Print("key 'enter' pressed, activating viewport")
 			cmds = append(cmds, state.ActivateViewportCmd)
 
 		case key == "x":
-			log.Print("key 'x' pressed, deleting current key")
-			currentKey := l.Model.SelectedItem().FilterValue()
-			if currentKey == "" {
-				log.Print("No current key selected for deletion")
-			} else {
-				log.Printf("Deleting key: %s", currentKey)
-				cmds = append(cmds, command.DeleteKey(ctx, client, currentKey))
-			}
+			l, cmds = l.DeleteKey(ctx, client, cmds)
 
 		case key == "X":
-			log.Printf("key 'X' pressed, perform bulk delete for %d keys", len(l.VisibleItems()))
-			keys := make([]string, 0, len(l.VisibleItems()))
-			for _, it := range l.VisibleItems() {
-				keys = append(keys, it.FilterValue())
-			}
-			cmds = append(cmds, command.BulkDelete(ctx, client, keys))
+			l, cmds = l.BulkDelete(ctx, client, cmds)
 
 		case key == "r":
 			log.Print("key 'r' pressed, refreshing key list")
 			cmds = append(cmds, command.GetKeys(ctx, client, ""))
+
+		case key == "y":
+			log.Print("key 'y' pressed, copying current key to clipboard")
+			cmds = append(cmds, command.CopyValueToClipboard(ctx, l.SelectedItem().FilterValue()))
 		}
 	}
 
 	m, cmd := l.Model.Update(msg)
+	l.Model = m
 	cmds = append(cmds, cmd)
-	log.Printf("%d items after update. Index: %d", len(m.Items()), m.Index())
-	selectedItem := m.SelectedItem()
-	log.Printf("Selected items after update: %+v. Index: %d, global index: %d", selectedItem, m.Index(), m.GlobalIndex())
-	log.Printf("visible: %d", len(m.VisibleItems()))
-	if selectedItem != nil {
-		log.Printf("Before getting current key. Item: %+v", selectedItem)
-		cur = selectedItem.FilterValue()
-	}
-	if cur != empty && prv != cur {
-		log.Printf("Will be updating value display for key: \"%s\"", cur)
-		cmds = append(cmds, command.GetValue(ctx, client, cur))
+
+	if l.ShouldUpdateValue(prv) {
+		cmds = append(cmds, command.GetValue(ctx, client, l.SelectedItem().FilterValue()))
 	} else {
-		log.Printf("No change in selected key: \"%s\", prev: \"%s\"", cur, prv)
+		log.Print("No change in selected key")
 	}
 
-	l.Model = m
 	return l, tea.Batch(cmds...)
 }
 
@@ -156,4 +125,68 @@ func (l *CustomKeyList) View(width, height int, st state.AppState) string {
 		style = activeContainer
 	}
 	return style.Width(width).Height(height).Render(l.Model.View())
+}
+
+func (l CustomKeyList) DeleteKey(ctx context.Context, client *redis.Client, cmds []tea.Cmd) (CustomKeyList, []tea.Cmd) {
+	log.Print("key 'x' pressed, deleting current key")
+	si := l.SelectedItem()
+	if si == nil {
+		log.Print("No item selected - skipping deletion")
+		return l, cmds
+	}
+
+	k := si.FilterValue()
+	if k == "" {
+		log.Print("No current key selected for deletion")
+		return l, cmds
+	}
+
+	log.Printf("Deleting key: %s", k)
+	cmds = append(cmds, command.DeleteKey(ctx, client, k))
+	return l, cmds
+}
+
+func (l CustomKeyList) BulkDelete(ctx context.Context, client *redis.Client, cmds []tea.Cmd) (CustomKeyList, []tea.Cmd) {
+	if len(l.VisibleItems()) == 0 {
+		log.Print("No visible items to delete in bulk - skipping deletion")
+		return l, cmds
+	}
+
+	log.Printf("key 'X' pressed, perform bulk delete for %d keys", len(l.VisibleItems()))
+	keys := make([]string, 0, len(l.VisibleItems()))
+	for _, it := range l.VisibleItems() {
+		keys = append(keys, it.FilterValue())
+	}
+	cmds = append(cmds, command.BulkDelete(ctx, client, keys))
+	return l, cmds
+}
+func (l *CustomKeyList) removeKeyFromList() {
+	selected := l.SelectedItem().FilterValue()
+	log.Printf("Removing selected item \"%s\" at index %d. items(length: %d)", selected, l.GlobalIndex(), len(l.Items()))
+	l.RemoveItem(l.GlobalIndex())
+	log.Printf("Removed  selected item \"%s\". items(length: %d)", selected, len(l.Items()))
+	if l.FilterState() == list.FilterApplied {
+		// Manually re-apply filter to update visible items
+		si := l.Index()
+		l.SetFilterText(l.FilterValue())
+		l.Select(si)
+		if len(l.VisibleItems()) == 0 {
+			log.Println("Clear filter text as no items are visible after deletion")
+			l.SetFilterState(list.Unfiltered)
+		}
+	}
+}
+
+func (l CustomKeyList) ShouldUpdateValue(prv string) bool {
+	log.Printf("%d items after update. Index: %d", len(l.Items()), l.Index())
+	si := l.SelectedItem()
+	log.Printf("Selected items after update: %+v. Index: %d, global index: %d", si, l.Index(), l.GlobalIndex())
+	if si == nil {
+		return false
+	}
+
+	log.Printf("Before getting current key. Item: %+v", si)
+	cur := si.FilterValue()
+	log.Printf("Current selected key: \"%s\", previous selected key: \"%s\"", cur, prv)
+	return prv != cur
 }

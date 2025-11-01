@@ -10,7 +10,6 @@ import (
 	"github.com/hirotake111/redisclient/internal/color"
 	"github.com/hirotake111/redisclient/internal/command"
 	"github.com/hirotake111/redisclient/internal/domain/infoid"
-	"github.com/hirotake111/redisclient/internal/util"
 )
 
 var (
@@ -49,8 +48,6 @@ func New() InfoBox {
 }
 
 func (i InfoBox) Update(msg tea.Msg) (InfoBox, tea.Cmd) {
-	util.LogMsg("InfoBox received a message", msg)
-
 	if m, ok := msg.(command.InfoExpiredMsg); ok {
 		log.Printf("InfoBox received InfoExpiredMsg for Id: %s", m.Id)
 		switch it := i.infoType.(type) {
