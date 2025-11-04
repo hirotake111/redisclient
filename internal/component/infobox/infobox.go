@@ -1,7 +1,6 @@
 package infobox
 
 import (
-	"fmt"
 	"log"
 	"time"
 
@@ -9,7 +8,6 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/hirotake111/redisclient/internal/color"
 	"github.com/hirotake111/redisclient/internal/command"
-	"github.com/hirotake111/redisclient/internal/domain/infoid"
 )
 
 var (
@@ -50,47 +48,52 @@ func New() InfoBox {
 func (i InfoBox) Update(msg tea.Msg) (InfoBox, tea.Cmd) {
 	if m, ok := msg.(command.InfoExpiredMsg); ok {
 		log.Printf("InfoBox received InfoExpiredMsg for Id: %s", m.Id)
+		log.Printf("Current InfoType: %+v", i.infoType)
 		switch it := i.infoType.(type) {
 		case command.InfoTypeInfo:
 			if m.Id == it.InfoId {
+				log.Print("Expiring InfoTypeInfo")
 				i.infoType = command.InfoTypeNone{}
 			}
 		case command.InfoTypeWarning:
 			if m.Id == it.InfoId {
+				log.Print("Expiring InfoTypeWarning")
 				i.infoType = command.InfoTypeNone{}
 			}
 		case command.InfoTypeError:
 			if m.Id == it.InfoId {
+				log.Print("Expiring InfoTypeError")
 				i.infoType = command.InfoTypeNone{}
 			}
 		default:
 			// Do nothing
+			log.Print("InfoBox received InfoExpiredMsg but no matching InfoType to expire")
 		}
 		return i, nil
 	}
 
-	if m, ok := msg.(command.KeysUpdatedMsg); ok {
-		log.Printf("InfoBox received KeysUpdatedMsg with %d keys", len(m.Keys))
-		id, err := infoid.New()
-		if err != nil {
-			log.Printf("Error generating info ID: %v", err)
-			i.infoType = command.InfoTypeError{
-				InfoId:    "unknown",
-				Err:       err,
-				ExpiresIn: 5 * time.Second,
-			}
-			return i, nil
-		}
-		i.infoType = command.InfoTypeInfo{
-			InfoId:    id,
-			Text:      fmt.Sprintf("Fetched %d keys from Redis.", len(m.Keys)),
-			ExpiresIn: 5 * time.Second,
-		}
-		return i, nil
-	}
+	// if m, ok := msg.(command.KeysUpdatedMsg); ok {
+	// 	log.Printf("InfoBox received KeysUpdatedMsg with %d keys", len(m.Keys))
+	// 	id, err := infoid.New()
+	// 	if err != nil {
+	// 		log.Printf("Error generating info ID: %v", err)
+	// 		i.infoType = command.InfoTypeError{
+	// 			InfoId:    "unknown",
+	// 			Err:       err,
+	// 			ExpiresIn: 5 * time.Second,
+	// 		}
+	// 		return i, nil
+	// 	}
+	// 	i.infoType = command.InfoTypeInfo{
+	// 		InfoId:    id,
+	// 		Text:      fmt.Sprintf("Fetched %d keys from Redis.", len(m.Keys)),
+	// 		ExpiresIn: 5 * time.Second,
+	// 	}
+	// 	return i, nil
+	// }
 
 	if m, ok := msg.(command.InfoMsg); ok {
-		log.Printf("InfoBox sending expiration command for InfoType: %+v", m.InfoType.Type())
+		log.Printf("InfoBox received InfoMsg: %+v", m)
 		i.infoType = m.InfoType
 		var id string
 		var expiresIn time.Duration

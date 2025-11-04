@@ -3,12 +3,14 @@ package list
 import (
 	"context"
 	"log"
+	"time"
 
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/hirotake111/redisclient/internal/color"
 	"github.com/hirotake111/redisclient/internal/command"
+	"github.com/hirotake111/redisclient/internal/domain/infoid"
 	"github.com/hirotake111/redisclient/internal/state"
 	"github.com/redis/go-redis/v9"
 )
@@ -74,10 +76,18 @@ func (l CustomKeyList) Update(ctx context.Context, client *redis.Client, msg tea
 		items := newItems(msg.Keys, l.Width(), l.Height())
 		l.Model = items
 		l.ResetSelected()
-		if selected := l.SelectedItem(); selected != nil {
-			return l, command.GetValue(ctx, client, selected.FilterValue())
+		cmds := []tea.Cmd{}
+		id, err := infoid.New()
+		if err != nil {
+			cmds = append(cmds, func() tea.Msg { return command.NewErrorMsg("unknown", err, 5*time.Second) })
+
 		}
-		return l, nil
+
+		cmds = append(cmds, func() tea.Msg { return command.NewInfoMsg(id, "Key list refreshed", 5*time.Second) })
+		if selected := l.SelectedItem(); selected != nil {
+			cmds = append(cmds, command.GetValue(ctx, client, selected.FilterValue()))
+		}
+		return l, tea.Batch(cmds...)
 	}
 
 	if msg, ok := msg.(tea.KeyMsg); ok {
@@ -95,8 +105,11 @@ func (l CustomKeyList) Update(ctx context.Context, client *redis.Client, msg tea
 			l, cmds = l.BulkDelete(ctx, client, cmds)
 
 		case key == "r":
-			log.Print("key 'r' pressed, refreshing key list")
-			cmds = append(cmds, command.GetKeys(ctx, client, ""))
+			// Avoid refreshing while filtering (otherwise it gets refreshed when pressing r key)
+			if l.FilterState() != list.Filtering {
+				log.Print("key 'r' pressed, refreshing key list")
+				cmds = append(cmds, command.GetKeys(ctx, client, ""))
+			}
 
 		case key == "y":
 			log.Print("key 'y' pressed, copying current key to clipboard")
