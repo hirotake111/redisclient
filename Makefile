@@ -22,3 +22,7 @@ fake-data: # Generate fake data for testing
 
 log: # View application logs
 	less $(LOG_FILE)
+
+release: # Build & upload binary to GitHub Releases
+	goreleaser release --clean
+
