@@ -1,4 +1,4 @@
-# redisclient
+# red
 
 This repository is a Redis client program that provides a Terminal User Interface (TUI) for managing and interacting with Redis servers.
 
