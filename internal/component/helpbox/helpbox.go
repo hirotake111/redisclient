@@ -11,12 +11,12 @@ var (
 		{"k or ↑", "up"},
 		{"h or ←", "left"},
 		{"l or →", "right"},
-		{"Enter", "update current value"},
-		{"d", "delete key"},
+		{"ENTER", "Move between value view and key list"},
 		{"/", "filter keys"},
-		{"n", "next page"},
-		{"p", "previous page"},
-		{"q/string{", " Esc: quit"},
+		{"r", "refresh keys"},
+		{"x", "delete key"},
+		{"X", "bulk delete filtered keys"},
+		{"q or CTRL+c or ESC", " quit"},
 	}
 	helpTextkeyStyle = lipgloss.NewStyle().
 				MarginRight(1).

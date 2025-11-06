@@ -2,10 +2,12 @@
 
 Yet another Redis client TUI (for development).
 
+<img src="./demo.gif" />
+
 > [!IMPORTANT]
 > This is a tool specifically for development and debugging. It is NOT suitable for production use.
 
-red is a TUI application dev tool tailored for my own use case, which is to quickly view and edit Redis keys and values. Therefore:
+red is a redis client TUI application dev tool tailored for my own use case, which is to quickly view Redis keys and values. Therefore:
 
 - It does not support all Redis commands, data types (it doesn't even support SET currently).
 - It uses KEYS command to fetch all the keys in database (not suitable for production).
@@ -25,7 +27,7 @@ Or, you can build from source:
 ```sh
 git clone 
 make build
-mv ./bin/red <path to your HOME>
+mv ./bin/red <path to a directory in you like>
 ```
 
 ## Specifying Redis Connection Parameters
@@ -34,9 +36,10 @@ This application connects to a Redis server using connection parameters specifie
 
 - `REDIS_URL`: The URL or address of the Redis server. If not set, defaults to `redis://localhost:6379`.
 
-You can set this environment variable before running the application to connect to a different Redis server.
+You can set the environment variable above before running the application to connect to a different Redis server.
 
 ### TODOs
 
+- Periodically refresh key list.
 - Update pretty function to make JSON look better.
 - SET command support (maybe).
