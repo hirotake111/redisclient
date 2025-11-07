@@ -4,6 +4,7 @@ import (
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/hirotake111/redisclient/internal/domain/infoid"
 )
 
 type InfoType interface {
@@ -17,8 +18,8 @@ func (i InfoTypeNone) Type() string { return "none" }
 
 // Info info type
 type InfoTypeInfo struct {
+	InfoId    infoid.InfoID // Unique identifier for the message
 	Text      string        // The informational message text
-	InfoId    string        // Unique identifier for the message
 	ExpiresIn time.Duration // Duration after which the message expires
 }
 
@@ -27,8 +28,8 @@ func (i InfoTypeInfo) Expires() time.Duration { return i.ExpiresIn }
 
 // Warning info type
 type InfoTypeWarning struct {
+	InfoId    infoid.InfoID // Unique identifier for the message
 	Text      string        // The warning message text
-	InfoId    string        // Unique identifier for the message
 	ExpiresIn time.Duration // Duration after which the message expires
 }
 
@@ -37,8 +38,8 @@ func (i InfoTypeWarning) Expires() time.Duration { return i.ExpiresIn }
 
 // Error info type
 type InfoTypeError struct {
+	InfoId    infoid.InfoID // Unique identifier for the message
 	Err       error         // Error
-	InfoId    string        // Unique identifier for the message
 	ExpiresIn time.Duration // Duration after which the message expires
 }
 
@@ -54,7 +55,7 @@ func (InfoMsg) Kind() string {
 }
 
 // NewInfoMsg creates a command that sends an InfoMsg with the given InfoType.
-func NewInfoMsg(id, text string, expiresIn time.Duration) tea.Msg {
+func NewInfoMsg(id infoid.InfoID, text string, expiresIn time.Duration) tea.Msg {
 	return InfoMsg{InfoType: InfoTypeInfo{
 		Text:      text,
 		InfoId:    id,
@@ -62,7 +63,7 @@ func NewInfoMsg(id, text string, expiresIn time.Duration) tea.Msg {
 	}}
 }
 
-func NewWarningMsg(id, text string, expiresIn time.Duration) tea.Msg {
+func NewWarningMsg(id infoid.InfoID, text string, expiresIn time.Duration) tea.Msg {
 	return InfoMsg{InfoType: InfoTypeWarning{
 		Text:      text,
 		InfoId:    id,
@@ -70,7 +71,7 @@ func NewWarningMsg(id, text string, expiresIn time.Duration) tea.Msg {
 	}}
 }
 
-func NewErrorMsg(id string, err error, expiresIn time.Duration) tea.Msg {
+func NewErrorMsg(id infoid.InfoID, err error, expiresIn time.Duration) tea.Msg {
 	return InfoMsg{InfoType: InfoTypeError{
 		Err:       err,
 		InfoId:    id,
@@ -79,7 +80,7 @@ func NewErrorMsg(id string, err error, expiresIn time.Duration) tea.Msg {
 }
 
 type InfoExpiredMsg struct {
-	Id string // Unique identifier for the message that has expired
+	Id infoid.InfoID // Unique identifier for the message that has expired
 }
 
 func (InfoExpiredMsg) Kind() string {

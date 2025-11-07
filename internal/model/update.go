@@ -16,17 +16,8 @@ const (
 
 func (m Model) Init() tea.Cmd {
 	log.Print("Initializing model...")
-	id, err := infoid.New()
-	if err != nil {
-		return command.NewErrorInfoCmd("unknown", err, expiration)
-	}
-
 	cmd := func() tea.Msg {
-		return command.NewInfoMsg(
-			id,
-			"Connected to Redis successfully.",
-			expiration,
-		)
+		return command.NewInfoMsg(infoid.New(), "Connected to Redis successfully.", expiration)
 	}
 	return tea.Batch(command.GetKeys(m.ctx, m.redis, ""), cmd)
 }

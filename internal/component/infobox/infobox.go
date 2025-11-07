@@ -8,6 +8,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/hirotake111/redisclient/internal/color"
 	"github.com/hirotake111/redisclient/internal/command"
+	"github.com/hirotake111/redisclient/internal/domain/infoid"
 )
 
 var (
@@ -72,30 +73,10 @@ func (i InfoBox) Update(msg tea.Msg) (InfoBox, tea.Cmd) {
 		return i, nil
 	}
 
-	// if m, ok := msg.(command.KeysUpdatedMsg); ok {
-	// 	log.Printf("InfoBox received KeysUpdatedMsg with %d keys", len(m.Keys))
-	// 	id, err := infoid.New()
-	// 	if err != nil {
-	// 		log.Printf("Error generating info ID: %v", err)
-	// 		i.infoType = command.InfoTypeError{
-	// 			InfoId:    "unknown",
-	// 			Err:       err,
-	// 			ExpiresIn: 5 * time.Second,
-	// 		}
-	// 		return i, nil
-	// 	}
-	// 	i.infoType = command.InfoTypeInfo{
-	// 		InfoId:    id,
-	// 		Text:      fmt.Sprintf("Fetched %d keys from Redis.", len(m.Keys)),
-	// 		ExpiresIn: 5 * time.Second,
-	// 	}
-	// 	return i, nil
-	// }
-
 	if m, ok := msg.(command.InfoMsg); ok {
 		log.Printf("InfoBox received InfoMsg: %+v", m)
 		i.infoType = m.InfoType
-		var id string
+		var id infoid.InfoID
 		var expiresIn time.Duration
 
 		switch it := m.InfoType.(type) {
