@@ -16,12 +16,9 @@ const (
 
 func (m Model) Init() tea.Cmd {
 	log.Print("Initializing model...")
-
 	id, err := infoid.New()
 	if err != nil {
-		return func() tea.Msg {
-			return command.NewErrorMsg("unknown", err, expiration)
-		}
+		return command.NewErrorInfoCmd("unknown", err, expiration)
 	}
 
 	cmd := func() tea.Msg {

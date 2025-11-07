@@ -16,12 +16,14 @@ import (
 
 const (
 	expiration = 5 * time.Second
+	unknownID  = "unknown"
 )
 
 func DisplayEmptyValue() tea.Msg {
 	return ValueUpdatedMsg{}
 }
 
+// GetKeys fetches keys from Redis matching the given pattern.
 func GetKeys(ctx context.Context, redis *redis.Client, pattern string) tea.Cmd {
 	const exp = 5 * time.Second
 
@@ -31,9 +33,7 @@ func GetKeys(ctx context.Context, redis *redis.Client, pattern string) tea.Cmd {
 
 	id, err := infoid.New()
 	if err != nil {
-		return func() tea.Msg {
-			return NewErrorMsg("unknown", err, exp)
-		}
+		return NewErrorInfoCmd(unknownID, err, exp)
 	}
 
 	return func() tea.Msg {
@@ -49,14 +49,14 @@ func GetKeys(ctx context.Context, redis *redis.Client, pattern string) tea.Cmd {
 }
 
 func GetValue(ctx context.Context, redis *redis.Client, key string) tea.Cmd {
+	id, err := infoid.New()
+	if err != nil {
+		log.Printf("Error generating info ID: %v", err)
+		return NewErrorInfoCmd("unknown", err, expiration)
+	}
+
 	return func() tea.Msg {
 		log.Printf("Fetching value for key '%s' from Redis", key)
-		id, err := infoid.New()
-		if err != nil {
-			log.Printf("Error generating info ID: %v", err)
-			return NewErrorMsg("unknown", err, expiration)
-		}
-
 		t, err := redis.Type(ctx, key).Result()
 		if err != nil {
 			log.Printf("Error fetching type for key %s: %v", key, err)
@@ -154,13 +154,13 @@ func escapeCharacter(value string) string {
 }
 
 func UpdateValue(ctx context.Context, client *redis.Client, key string, newValue string) tea.Cmd {
+	id, err := infoid.New()
+	if err != nil {
+		return NewErrorInfoCmd("unknown", err, expiration)
+	}
+
 	return func() tea.Msg {
 		log.Printf("Updating key %s with new value %s", key, newValue)
-		id, err := infoid.New()
-		if err != nil {
-			return NewErrorMsg("unknown", err, expiration)
-		}
-
 		if err := client.Set(ctx, key, newValue, 0).Err(); err != nil {
 			return NewErrorMsg(id, err, expiration)
 		}
@@ -173,13 +173,13 @@ func UpdateValue(ctx context.Context, client *redis.Client, key string, newValue
 }
 
 func DeleteKey(ctx context.Context, client *redis.Client, key string) tea.Cmd {
+	id, err := infoid.New()
+	if err != nil {
+		return NewErrorInfoCmd("unknown", err, expiration)
+	}
+
 	return func() tea.Msg {
 		log.Printf("Deleting key \"%s\" from Redis", key)
-		id, err := infoid.New()
-		if err != nil {
-			return NewErrorMsg("unknown", err, expiration)
-		}
-
 		if err := client.Del(ctx, key).Err(); err != nil {
 			return NewErrorMsg(id, err, expiration)
 		}
@@ -195,10 +195,7 @@ func SwitchTab(ctx context.Context, client *redis.Client, tab int) tea.Cmd {
 
 	id, err := infoid.New()
 	if err != nil {
-		return func() tea.Msg {
-
-			return NewErrorMsg("unknown", err, expiration)
-		}
+		return NewErrorInfoCmd("unknown", err, expiration)
 	}
 
 	return func() tea.Msg {
@@ -213,9 +210,7 @@ func SwitchTab(ctx context.Context, client *redis.Client, tab int) tea.Cmd {
 func CopyValueToClipboard(ctx context.Context, value string) tea.Cmd {
 	id, err := infoid.New()
 	if err != nil {
-		return func() tea.Msg {
-			return NewErrorMsg("unknown", err, expiration)
-		}
+		return NewErrorInfoCmd("unknown", err, expiration)
 	}
 
 	return func() tea.Msg {
@@ -251,13 +246,13 @@ func UpdateSelectedItemCmd(newKey string) tea.Msg {
 }
 
 func BulkDelete(ctx context.Context, client *redis.Client, keys []string) tea.Cmd {
+	id, err := infoid.New()
+	if err != nil {
+		return NewErrorInfoCmd("unknown", err, expiration)
+	}
+
 	return func() tea.Msg {
 		log.Printf("Bulk deleting %d keys from Redis", len(keys))
-		id, err := infoid.New()
-		if err != nil {
-			return NewErrorMsg("unknown", err, expiration)
-		}
-
 		if err := client.Del(ctx, keys...).Err(); err != nil {
 			return NewErrorMsg(id, err, expiration)
 		}
@@ -265,5 +260,11 @@ func BulkDelete(ctx context.Context, client *redis.Client, keys []string) tea.Cm
 
 		// Get new values for refreshing the key list
 		return GetKeys(ctx, client, "")()
+	}
+}
+
+func NewErrorInfoCmd(id string, err error, expiresIn time.Duration) tea.Cmd {
+	return func() tea.Msg {
+		return NewErrorMsg(id, err, expiresIn)
 	}
 }

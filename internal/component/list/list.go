@@ -79,7 +79,8 @@ func (l CustomKeyList) Update(ctx context.Context, client *redis.Client, msg tea
 		cmds := []tea.Cmd{}
 		id, err := infoid.New()
 		if err != nil {
-			cmds = append(cmds, func() tea.Msg { return command.NewErrorMsg("unknown", err, 5*time.Second) })
+			cmd := command.NewErrorInfoCmd("unknown", err, 5*time.Second)
+			cmds = append(cmds, cmd)
 
 		}
 
