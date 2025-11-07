@@ -1,6 +1,6 @@
-APP_NAME=redisclient
+APP_NAME=red
 BIN_DIR=bin
-LOG_FILE=/tmp/redisclient.log
+LOG_FILE=/tmp/red.log
 n ?= 1000
 
 .PHONY: build run test clean fake-data

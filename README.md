@@ -1,6 +1,34 @@
-# redisclient
+# red
 
-This repository is a Redis client program that provides a Terminal User Interface (TUI) for managing and interacting with Redis servers.
+Yet another Redis client TUI (for development).
+
+<img src="./demo.gif" />
+
+> [!IMPORTANT]
+> This is a tool specifically for development and debugging. It is NOT suitable for production use.
+
+red is a redis client TUI application dev tool tailored for my own use case, which is to quickly view Redis keys and values. Therefore:
+
+- It does not support all Redis commands, data types (it doesn't even support SET currently).
+- It uses KEYS command to fetch all the keys in database (not suitable for production).
+- It doesn't support Windows (yet).
+- And it might not run on your system, but does on mine 😉.
+
+## Installation
+
+Via Homebrew:
+
+```bash
+brew install hirotake111/tap/red
+```
+
+Or, you can build from source:
+
+```sh
+git clone 
+make build
+mv ./bin/red <path to a directory in you like>
+```
 
 ## Specifying Redis Connection Parameters
 
@@ -8,19 +36,10 @@ This application connects to a Redis server using connection parameters specifie
 
 - `REDIS_URL`: The URL or address of the Redis server. If not set, defaults to `redis://localhost:6379`.
 
-You can set this environment variable before running the application to connect to a different Redis server.
-
-### Example usage
-
-```sh
-# Connect to a local Redis server (default)
-go run ./cmd/tui
-
-# Connect to a remote Redis server
-export REDIS_URL=redis://your-redis-host:6379
-go run ./cmd/tui
-```
+You can set the environment variable above before running the application to connect to a different Redis server.
 
 ### TODOs
 
-- Navigation with arrow keys on key list
+- Periodically refresh key list.
+- Update pretty function to make JSON look better.
+- SET command support (maybe).

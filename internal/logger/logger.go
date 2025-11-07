@@ -5,7 +5,7 @@ import (
 	"os"
 )
 
-const logFileName = "redisclient.log"
+const logFileName = "red.log"
 
 // LogFilePath returns the full path to the log file in the system temp directory.
 func LogFilePath() string {

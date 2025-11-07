@@ -7,11 +7,6 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-const (
-	appName        = "redisclient"
-	configFileName = "config.json"
-)
-
 type Config struct {
 	Option *redis.Options
 }
