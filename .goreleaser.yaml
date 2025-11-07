@@ -23,6 +23,11 @@ builds:
       # - windows
       - darwin
     main: ./cmd/tui/
+    ldflags:
+      # `-s -w` strips debug info to shrink the binary.
+      # -X main.version={{.Version}} replaces the version variable at build time.
+      # {{.Version}} comes from your Git tag (e.g. v1.2.3) when GoReleaser runs.
+      - "-s -w -X main.version={{ .Version }}"
 
 archives:
   - formats: [tar.gz]

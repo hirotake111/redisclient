@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -13,7 +14,19 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
+const (
+	version = "dev"
+)
+
 func main() {
+	showVersion := flag.Bool("version", false, "Show version number")
+	flag.Parse()
+
+	if showVersion != nil && *showVersion {
+		fmt.Printf("VERSION: %s\n", version)
+		os.Exit(0)
+	}
+
 	// Initialize logger to write to temp file
 	if err := logger.Initialize(); err != nil {
 		// If logger fails, print to stderr and exit
