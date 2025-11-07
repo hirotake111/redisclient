@@ -51,3 +51,4 @@ You can set the environment variable above before running the application to con
 - Periodically refresh key list.
 - Update pretty function to make JSON look better.
 - SET command support (maybe).
+- Cache values to avoid fetching them again when selected repeatedly.

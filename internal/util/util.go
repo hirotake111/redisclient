@@ -9,7 +9,7 @@ import (
 
 func LogMsg(prefix string, msg tea.Msg) {
 	if m, ok := msg.(command.MsgWithKind); ok {
-		log.Printf("%s - KIND: %s", prefix, m.Kind())
+		log.Printf("%s - KIND: %s", prefix, m.String())
 	} else {
 		log.Printf("%s - %+v", prefix, msg)
 	}

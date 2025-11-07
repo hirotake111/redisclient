@@ -1,6 +1,7 @@
 package state
 
 import (
+	"fmt"
 	"log"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -14,20 +15,24 @@ const (
 )
 
 type AppStateTransitionedMsg struct {
-	kind string
 	data data
 }
 
+func (m AppStateTransitionedMsg) Data() string {
+	return string(m.data)
+}
+
+func (m AppStateTransitionedMsg) String() string {
+	return fmt.Sprintf("app_state_transitioned - data: '%s'", m.Data())
+}
+
 func ActivateViewportCmd() tea.Msg {
-	log.Println("Sending AppStateTransitionedMsg")
 	return AppStateTransitionedMsg{
-		kind: string(ViewportActivated),
 		data: ViewportActivated,
 	}
 }
 func DeactivateViewportCmd() tea.Msg {
 	return AppStateTransitionedMsg{
-		kind: string(ViewportDeactivated),
 		data: ViewportDeactivated,
 	}
 }
@@ -49,7 +54,7 @@ func (s AppState) Update(msg tea.Msg) (AppState, tea.Cmd) {
 	if !ok {
 		return s, nil
 	}
-
+	log.Printf("AppState received AppStateTransitionedMsg: %+v", m)
 	switch m.data {
 	case ViewportActivated:
 		s.listActive = false

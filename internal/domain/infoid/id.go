@@ -1,21 +1,15 @@
 package infoid
 
 import (
-	"crypto/rand"
-	"encoding/hex"
+	"github.com/google/uuid"
 )
 
-const (
-	idLength = 8
-)
+// Info ID represents a unique identifier for informational messages.
+type InfoID uuid.UUID
 
-func New() (string, error) {
-	b := make([]byte, idLength)
-
-	_, err := rand.Read(b)
-	if err != nil {
-		return "", err
-	}
-
-	return hex.EncodeToString(b), nil
+func New() InfoID {
+	return InfoID(uuid.New())
+}
+func (id InfoID) String() string {
+	return uuid.UUID(id).String()
 }

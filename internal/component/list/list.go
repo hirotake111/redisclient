@@ -2,6 +2,7 @@ package list
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"time"
 
@@ -68,22 +69,16 @@ func (l CustomKeyList) Update(ctx context.Context, client *redis.Client, msg tea
 		prv = l.SelectedItem().FilterValue()
 	}
 
-	if _, ok := msg.(command.KeyDeletedMsg); ok {
+	if msg, ok := msg.(command.KeyDeletedMsg); ok {
 		l.removeKeyFromList()
+		t := fmt.Sprintf("Key '%s' deleted successfully.", msg.Key)
+		cmds = append(cmds, command.NewInfoInfoCmd(infoid.New(), t, 5*time.Second))
 	}
 
 	if msg, ok := msg.(command.KeysUpdatedMsg); ok {
 		items := newItems(msg.Keys, l.Width(), l.Height())
 		l.Model = items
 		l.ResetSelected()
-		cmds := []tea.Cmd{}
-		id, err := infoid.New()
-		if err != nil {
-			cmds = append(cmds, func() tea.Msg { return command.NewErrorMsg("unknown", err, 5*time.Second) })
-
-		}
-
-		cmds = append(cmds, func() tea.Msg { return command.NewInfoMsg(id, "Key list refreshed", 5*time.Second) })
 		if selected := l.SelectedItem(); selected != nil {
 			cmds = append(cmds, command.GetValue(ctx, client, selected.FilterValue()))
 		}
@@ -119,7 +114,9 @@ func (l CustomKeyList) Update(ctx context.Context, client *redis.Client, msg tea
 
 	m, cmd := l.Model.Update(msg)
 	l.Model = m
-	cmds = append(cmds, cmd)
+	if cmd != nil {
+		cmds = append(cmds, cmd)
+	}
 
 	if l.ShouldUpdateValue(prv) {
 		cmds = append(cmds, command.GetValue(ctx, client, l.SelectedItem().FilterValue()))
@@ -127,6 +124,7 @@ func (l CustomKeyList) Update(ctx context.Context, client *redis.Client, msg tea
 		log.Print("No change in selected key")
 	}
 
+	log.Printf("End of CustomKeyList.Update - total cmds: %v", cmds)
 	return l, tea.Batch(cmds...)
 }
 
