@@ -3,6 +3,7 @@ package infoid
 import (
 	"crypto/rand"
 	"encoding/hex"
+	"fmt"
 )
 
 const (
@@ -14,7 +15,7 @@ func New() (string, error) {
 
 	_, err := rand.Read(b)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("Failed to generate a new ID: %w", err)
 	}
 
 	return hex.EncodeToString(b), nil

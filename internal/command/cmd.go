@@ -263,8 +263,16 @@ func BulkDelete(ctx context.Context, client *redis.Client, keys []string) tea.Cm
 	}
 }
 
+// NewErrorInfoCmd is a helper function to create a error info command.
 func NewErrorInfoCmd(id string, err error, expiresIn time.Duration) tea.Cmd {
 	return func() tea.Msg {
 		return NewErrorMsg(id, err, expiresIn)
+	}
+}
+
+// NewWarningInfoCmd is a helper function to create a info command.
+func NewInfoInfoCmd(id, text string, expiresIn time.Duration) tea.Cmd {
+	return func() tea.Msg {
+		return NewInfoMsg(id, text, expiresIn)
 	}
 }

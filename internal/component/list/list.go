@@ -2,6 +2,7 @@ package list
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"time"
 
@@ -10,7 +11,6 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/hirotake111/redisclient/internal/color"
 	"github.com/hirotake111/redisclient/internal/command"
-	"github.com/hirotake111/redisclient/internal/domain/infoid"
 	"github.com/hirotake111/redisclient/internal/state"
 	"github.com/redis/go-redis/v9"
 )
@@ -68,23 +68,16 @@ func (l CustomKeyList) Update(ctx context.Context, client *redis.Client, msg tea
 		prv = l.SelectedItem().FilterValue()
 	}
 
-	if _, ok := msg.(command.KeyDeletedMsg); ok {
+	if msg, ok := msg.(command.KeyDeletedMsg); ok {
 		l.removeKeyFromList()
+		t := fmt.Sprintf("Key '%s' deleted successfully.", msg.Key)
+		cmds = append(cmds, command.NewInfoInfoCmd("key-deleted", t, 5*time.Second))
 	}
 
 	if msg, ok := msg.(command.KeysUpdatedMsg); ok {
 		items := newItems(msg.Keys, l.Width(), l.Height())
 		l.Model = items
 		l.ResetSelected()
-		cmds := []tea.Cmd{}
-		id, err := infoid.New()
-		if err != nil {
-			cmd := command.NewErrorInfoCmd("unknown", err, 5*time.Second)
-			cmds = append(cmds, cmd)
-
-		}
-
-		cmds = append(cmds, func() tea.Msg { return command.NewInfoMsg(id, "Key list refreshed", 5*time.Second) })
 		if selected := l.SelectedItem(); selected != nil {
 			cmds = append(cmds, command.GetValue(ctx, client, selected.FilterValue()))
 		}
