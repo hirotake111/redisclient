@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/charmbracelet/bubbles/timer"
 	"github.com/hirotake111/redisclient/internal/command"
 	"github.com/hirotake111/redisclient/internal/component/infobox"
 	"github.com/hirotake111/redisclient/internal/component/list"
@@ -33,6 +34,7 @@ type Model struct {
 	keyList    list.CustomKeyList
 	viewport   viewport.Viewport
 	infoBox    infobox.InfoBox
+	timer      timer.Model // Timer for handling timed events
 }
 
 func NewModel(ctx context.Context, redis *redis.Client) Model {

@@ -201,14 +201,6 @@ func CopyValueToClipboard(ctx context.Context, value string) tea.Cmd {
 	}
 }
 
-// TickAndClear creates a command that ticks every duration and returns a TimedOutMsg.
-func TickAndClear(duration time.Duration, kind string) tea.Cmd {
-	return tea.Tick(duration, func(t time.Time) tea.Msg {
-		return TimedOutMsg{Kind: kind}
-	})
-
-}
-
 func UpdateSelectedItemCmd(newKey string) tea.Msg {
 	return HighlightedKeyUpdatedMsg{}
 }

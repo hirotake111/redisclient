@@ -1,6 +1,7 @@
 package command
 
 import (
+	"fmt"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -50,8 +51,17 @@ type InfoMsg struct {
 	InfoType InfoType // Type of the informational message
 }
 
-func (InfoMsg) Kind() string {
-	return "info"
+func (m InfoMsg) String() string {
+	switch it := m.InfoType.(type) {
+	case InfoTypeInfo:
+		return fmt.Sprintf("InfoMsg[Info]: %s (Id: %s, ExpiresIn: %s)", it.Text, it.InfoId, it.ExpiresIn)
+	case InfoTypeWarning:
+		return fmt.Sprintf("InfoMsg[Warning]: %s (Id: %s, ExpiresIn: %s)", it.Text, it.InfoId, it.ExpiresIn)
+	case InfoTypeError:
+		return fmt.Sprintf("InfoMsg[Error]: %s (Id: %s, ExpiresIn: %s)", it.Err.Error(), it.InfoId, it.ExpiresIn)
+	default:
+		return "InfoMsg[Unknown Type]"
+	}
 }
 
 // NewInfoMsg creates a command that sends an InfoMsg with the given InfoType.
@@ -83,6 +93,6 @@ type InfoExpiredMsg struct {
 	Id infoid.InfoID // Unique identifier for the message that has expired
 }
 
-func (InfoExpiredMsg) Kind() string {
-	return "info_expired"
+func (i InfoExpiredMsg) String() string {
+	return fmt.Sprintf("InfoExpiredMsg:Id=%s", i.Id)
 }

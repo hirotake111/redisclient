@@ -114,7 +114,9 @@ func (l CustomKeyList) Update(ctx context.Context, client *redis.Client, msg tea
 
 	m, cmd := l.Model.Update(msg)
 	l.Model = m
-	cmds = append(cmds, cmd)
+	if cmd != nil {
+		cmds = append(cmds, cmd)
+	}
 
 	if l.ShouldUpdateValue(prv) {
 		cmds = append(cmds, command.GetValue(ctx, client, l.SelectedItem().FilterValue()))
@@ -122,6 +124,7 @@ func (l CustomKeyList) Update(ctx context.Context, client *redis.Client, msg tea
 		log.Print("No change in selected key")
 	}
 
+	log.Printf("End of CustomKeyList.Update - total cmds: %v", cmds)
 	return l, tea.Batch(cmds...)
 }
 

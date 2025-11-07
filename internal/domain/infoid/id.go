@@ -10,3 +10,6 @@ type InfoID uuid.UUID
 func New() InfoID {
 	return InfoID(uuid.New())
 }
+func (id InfoID) String() string {
+	return uuid.UUID(id).String()
+}
