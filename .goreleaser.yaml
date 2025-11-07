@@ -29,7 +29,7 @@ builds:
       # -X main.version={{.Version}} replaces the version variable at build time.
       # {{.Version}} comes from your Git tag (e.g. v1.2.3) when GoReleaser runs.
       - -s -w
-      - -X github.com/hirotake111/redisclient/cmd/tui.Version={{ .Version }}
+      - -X main.Version={{ .Version }}
 
 archives:
   - formats: [tar.gz]
