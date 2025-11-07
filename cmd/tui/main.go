@@ -14,8 +14,8 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-const (
-	version = "dev"
+var (
+	Version = "dev"
 )
 
 func main() {
@@ -23,7 +23,7 @@ func main() {
 	flag.Parse()
 
 	if showVersion != nil && *showVersion {
-		fmt.Printf("VERSION: %s\n", version)
+		fmt.Printf("VERSION: %s\n", Version)
 		os.Exit(0)
 	}
 

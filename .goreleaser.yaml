@@ -7,6 +7,7 @@
 # vim: set ts=2 sw=2 tw=0 fo=cnqoj
 
 project_name: red
+version: 2
 
 before:
   hooks:
@@ -27,7 +28,8 @@ builds:
       # `-s -w` strips debug info to shrink the binary.
       # -X main.version={{.Version}} replaces the version variable at build time.
       # {{.Version}} comes from your Git tag (e.g. v1.2.3) when GoReleaser runs.
-      - "-s -w -X main.version={{ .Version }}"
+      - -s -w
+      - -X github.com/hirotake111/redisclient/cmd/tui.Version={{ .Version }}
 
 archives:
   - formats: [tar.gz]
