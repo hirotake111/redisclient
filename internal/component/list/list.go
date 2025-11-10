@@ -76,12 +76,28 @@ func (l CustomKeyList) Update(ctx context.Context, client *redis.Client, msg tea
 	}
 
 	if msg, ok := msg.(command.KeysUpdatedMsg); ok {
+		prev := l.SelectedItem()
 		items := newItems(msg.Keys, l.Width(), l.Height())
 		l.Model = items
-		l.ResetSelected()
-		if selected := l.SelectedItem(); selected != nil {
-			cmds = append(cmds, command.GetValue(ctx, client, selected.FilterValue()))
+		// Restore previous cursor position
+		if prev != nil {
+			pi, ok := prev.(item)
+			if !ok {
+				cmds = append(cmds, command.NewErrorInfoCmd(infoid.New(), fmt.Errorf("failed to assert previous item type"), 5*time.Second))
+			}
+			for i, a := range l.Model.Items() {
+				if a.(item).Title() == pi.Title() {
+					log.Printf("Restoring cursor position to index %d for item: %+v", i, a)
+					l.Model.Select(i)
+					break
+				}
+			}
+
+			if selected := l.SelectedItem(); selected != nil {
+				cmds = append(cmds, command.GetValue(ctx, client, selected.FilterValue()))
+			}
 		}
+
 		return l, tea.Batch(cmds...)
 	}
 
