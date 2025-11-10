@@ -4,7 +4,6 @@ import (
 	"log"
 	"time"
 
-	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/hirotake111/redisclient/internal/command"
 	"github.com/hirotake111/redisclient/internal/domain/infoid"
@@ -72,7 +71,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case command.TickMsg:
 		log.Print("Received tick message")
 		cmds = append(cmds, doTick())
-		if m.keyList.FilterState() == list.Unfiltered {
+		if m.keyList.IsBeingUnfiltered() {
 			cmds = append(cmds, command.GetKeys(m.ctx, m.redis, ""))
 		}
 		return m, tea.Batch(cmds...)
@@ -95,7 +94,7 @@ func (m Model) updateWithKey(key string) (Model, []tea.Cmd) {
 	var cmds []tea.Cmd
 	switch key {
 	case tea.KeyEsc.String(), tea.KeyCtrlC.String(), "q":
-		if m.keyList.FilterState() != list.Filtering {
+		if m.keyList.IsFitering() {
 			return m, []tea.Cmd{tea.Quit}
 		}
 
