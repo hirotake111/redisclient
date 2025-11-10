@@ -34,7 +34,7 @@ Or, you can build from source:
 ```sh
 git clone 
 make build
-mv ./bin/red <path to a directory in you like>
+mv ./bin/red <path to a directory you like to put the binary>
 ```
 
 ## Specifying Redis Connection Parameters
@@ -48,7 +48,6 @@ You can set the environment variable above before running the application to con
 
 ### TODOs
 
-- Periodically refresh key list.
 - Update pretty function to make JSON look better.
 - SET command support (maybe).
 - Cache values to avoid fetching them again when selected repeatedly.
