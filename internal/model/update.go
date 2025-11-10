@@ -72,7 +72,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case command.TickMsg:
 		log.Print("Received tick message")
 		cmds = append(cmds, doTick())
-		if m.keyList.FilterState() != list.Filtering {
+		if m.keyList.FilterState() == list.Unfiltered {
 			cmds = append(cmds, command.GetKeys(m.ctx, m.redis, ""))
 		}
 		return m, tea.Batch(cmds...)
