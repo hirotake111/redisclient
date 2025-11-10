@@ -123,8 +123,10 @@ func (l CustomKeyList) Update(ctx context.Context, client *redis.Client, msg tea
 			}
 
 		case key == "y":
-			log.Print("key 'y' pressed, copying current key to clipboard")
-			cmds = append(cmds, command.CopyValueToClipboard(ctx, l.SelectedItem().FilterValue()))
+			if l.Model.FilterState() != list.Filtering {
+				log.Print("key 'y' pressed, copying current key to clipboard")
+				cmds = append(cmds, command.CopyValueToClipboard(ctx, l.SelectedItem().FilterValue()))
+			}
 		}
 	}
 
