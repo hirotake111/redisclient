@@ -26,7 +26,7 @@ var (
 )
 
 type CustomKeyList struct {
-	list.Model
+	model list.Model
 }
 
 type item string
@@ -38,7 +38,7 @@ func (i item) FilterValue() string { return i.Title() }
 
 func New(keys []string, width, height int) CustomKeyList {
 	return CustomKeyList{
-		Model: newItems(keys, width, height),
+		model: newItems(keys, width, height),
 	}
 }
 
@@ -65,8 +65,8 @@ func (l CustomKeyList) Update(ctx context.Context, client *redis.Client, msg tea
 
 	var cmds []tea.Cmd
 	prv := empty
-	if l.SelectedItem() != nil {
-		prv = l.SelectedItem().FilterValue()
+	if l.model.SelectedItem() != nil {
+		prv = l.model.SelectedItem().FilterValue()
 	}
 
 	if msg, ok := msg.(command.KeyDeletedMsg); ok {
@@ -76,24 +76,24 @@ func (l CustomKeyList) Update(ctx context.Context, client *redis.Client, msg tea
 	}
 
 	if msg, ok := msg.(command.KeysUpdatedMsg); ok {
-		prev := l.SelectedItem()
-		items := newItems(msg.Keys, l.Width(), l.Height())
-		l.Model = items
+		prev := l.model.SelectedItem()
+		items := newItems(msg.Keys, l.model.Width(), l.model.Height())
+		l.model = items
 		// Restore previous cursor position
 		if prev != nil {
 			pi, ok := prev.(item)
 			if !ok {
 				cmds = append(cmds, command.NewErrorInfoCmd(infoid.New(), fmt.Errorf("failed to assert previous item type"), 5*time.Second))
 			}
-			for i, a := range l.Model.Items() {
+			for i, a := range l.model.Items() {
 				if a.(item).Title() == pi.Title() {
 					log.Printf("Restoring cursor position to index %d for item: %+v", i, a)
-					l.Model.Select(i)
+					l.model.Select(i)
 					break
 				}
 			}
 
-			if selected := l.SelectedItem(); selected != nil {
+			if selected := l.model.SelectedItem(); selected != nil {
 				cmds = append(cmds, command.GetValue(ctx, client, selected.FilterValue()))
 			}
 		}
@@ -105,7 +105,7 @@ func (l CustomKeyList) Update(ctx context.Context, client *redis.Client, msg tea
 		log.Println("Processing key message in CustomKeyList")
 		key := msg.String()
 		switch {
-		case key == "enter" && l.FilterState() != list.Filtering:
+		case key == "enter" && l.model.FilterState() != list.Filtering:
 			log.Print("key 'enter' pressed, activating viewport")
 			cmds = append(cmds, state.ActivateViewportCmd)
 
@@ -117,25 +117,27 @@ func (l CustomKeyList) Update(ctx context.Context, client *redis.Client, msg tea
 
 		case key == "r":
 			// Avoid refreshing while filtering (otherwise it gets refreshed when pressing r key)
-			if l.FilterState() != list.Filtering {
+			if l.model.FilterState() != list.Filtering {
 				log.Print("key 'r' pressed, refreshing key list")
 				cmds = append(cmds, command.GetKeys(ctx, client, ""))
 			}
 
 		case key == "y":
-			log.Print("key 'y' pressed, copying current key to clipboard")
-			cmds = append(cmds, command.CopyValueToClipboard(ctx, l.SelectedItem().FilterValue()))
+			if l.model.FilterState() != list.Filtering {
+				log.Print("key 'y' pressed, copying current key to clipboard")
+				cmds = append(cmds, command.CopyValueToClipboard(ctx, l.model.SelectedItem().FilterValue()))
+			}
 		}
 	}
 
-	m, cmd := l.Model.Update(msg)
-	l.Model = m
+	m, cmd := l.model.Update(msg)
+	l.model = m
 	if cmd != nil {
 		cmds = append(cmds, cmd)
 	}
 
 	if l.ShouldUpdateValue(prv) {
-		cmds = append(cmds, command.GetValue(ctx, client, l.SelectedItem().FilterValue()))
+		cmds = append(cmds, command.GetValue(ctx, client, l.model.SelectedItem().FilterValue()))
 	} else {
 		log.Print("No change in selected key")
 	}
@@ -145,18 +147,18 @@ func (l CustomKeyList) Update(ctx context.Context, client *redis.Client, msg tea
 }
 
 func (l *CustomKeyList) View(width, height int, st state.AppState) string {
-	l.SetWidth(width - 4)
-	l.SetHeight(height)
+	l.model.SetWidth(width - 4)
+	l.model.SetHeight(height)
 	style := defaultContainer
 	if st.ListActive() {
 		style = activeContainer
 	}
-	return style.Width(width).Height(height).Render(l.Model.View())
+	return style.Width(width).Height(height).Render(l.model.View())
 }
 
 func (l CustomKeyList) DeleteKey(ctx context.Context, client *redis.Client, cmds []tea.Cmd) (CustomKeyList, []tea.Cmd) {
 	log.Print("key 'x' pressed, deleting current key")
-	si := l.SelectedItem()
+	si := l.model.SelectedItem()
 	if si == nil {
 		log.Print("No item selected - skipping deletion")
 		return l, cmds
@@ -174,40 +176,40 @@ func (l CustomKeyList) DeleteKey(ctx context.Context, client *redis.Client, cmds
 }
 
 func (l CustomKeyList) BulkDelete(ctx context.Context, client *redis.Client, cmds []tea.Cmd) (CustomKeyList, []tea.Cmd) {
-	if len(l.VisibleItems()) == 0 {
+	if len(l.model.VisibleItems()) == 0 {
 		log.Print("No visible items to delete in bulk - skipping deletion")
 		return l, cmds
 	}
 
-	log.Printf("key 'X' pressed, perform bulk delete for %d keys", len(l.VisibleItems()))
-	keys := make([]string, 0, len(l.VisibleItems()))
-	for _, it := range l.VisibleItems() {
+	log.Printf("key 'X' pressed, perform bulk delete for %d keys", len(l.model.VisibleItems()))
+	keys := make([]string, 0, len(l.model.VisibleItems()))
+	for _, it := range l.model.VisibleItems() {
 		keys = append(keys, it.FilterValue())
 	}
 	cmds = append(cmds, command.BulkDelete(ctx, client, keys))
 	return l, cmds
 }
 func (l *CustomKeyList) removeKeyFromList() {
-	selected := l.SelectedItem().FilterValue()
-	log.Printf("Removing selected item \"%s\" at index %d. items(length: %d)", selected, l.GlobalIndex(), len(l.Items()))
-	l.RemoveItem(l.GlobalIndex())
-	log.Printf("Removed  selected item \"%s\". items(length: %d)", selected, len(l.Items()))
-	if l.FilterState() == list.FilterApplied {
+	selected := l.model.SelectedItem().FilterValue()
+	log.Printf("Removing selected item \"%s\" at index %d. items(length: %d)", selected, l.model.GlobalIndex(), len(l.model.Items()))
+	l.model.RemoveItem(l.model.GlobalIndex())
+	log.Printf("Removed  selected item \"%s\". items(length: %d)", selected, len(l.model.Items()))
+	if l.model.FilterState() == list.FilterApplied {
 		// Manually re-apply filter to update visible items
-		si := l.Index()
-		l.SetFilterText(l.FilterValue())
-		l.Select(si)
-		if len(l.VisibleItems()) == 0 {
+		si := l.model.Index()
+		l.model.SetFilterText(l.model.FilterValue())
+		l.model.Select(si)
+		if len(l.model.VisibleItems()) == 0 {
 			log.Println("Clear filter text as no items are visible after deletion")
-			l.SetFilterState(list.Unfiltered)
+			l.model.SetFilterState(list.Unfiltered)
 		}
 	}
 }
 
 func (l CustomKeyList) ShouldUpdateValue(prv string) bool {
-	log.Printf("%d items after update. Index: %d", len(l.Items()), l.Index())
-	si := l.SelectedItem()
-	log.Printf("Selected items after update: %+v. Index: %d, global index: %d", si, l.Index(), l.GlobalIndex())
+	log.Printf("%d items after update. Index: %d", len(l.model.Items()), l.model.Index())
+	si := l.model.SelectedItem()
+	log.Printf("Selected items after update: %+v. Index: %d, global index: %d", si, l.model.Index(), l.model.GlobalIndex())
 	if si == nil {
 		return false
 	}
@@ -216,4 +218,11 @@ func (l CustomKeyList) ShouldUpdateValue(prv string) bool {
 	cur := si.FilterValue()
 	log.Printf("Current selected key: \"%s\", previous selected key: \"%s\"", cur, prv)
 	return prv != cur
+}
+
+func (l CustomKeyList) IsBeingUnfiltered() bool {
+	return l.model.FilterState() == list.Unfiltered
+}
+func (l CustomKeyList) IsFitering() bool {
+	return l.model.FilterState() == list.Filtering
 }
